@@ -1,0 +1,14 @@
+# RadClass
+
+A collection of tools (including data analysis and machine learning applications) that can be used to explore radiation data (temporal and spectral) for external identification of radiation signatures.
+
+## Dependencies
+
+* Python 3
+
+Including the following Python packages:
+
+* h5py
+* numpy
+* pandas
+* matplotlib

@@ -1,0 +1,7 @@
+.vscode
+.pytest_cache
+__pycache__
+__init__.py
+*.h5
+*.ipynb
+*.csv
