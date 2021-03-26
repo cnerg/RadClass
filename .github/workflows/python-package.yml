@@ -2,6 +2,7 @@
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
 name: Python package
+version: 1.0
 
 on:
   push:
@@ -37,3 +38,14 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - checkout
+      - run: pip install -U pytest networkx matplotlib scipy coverage
+      - run: pip install -U coveralls PyYAML more_itertools
+      - run: coverage run --source=./trailmap/ -m pytest
+      - run: coverage report
+      - run: coverage html
+      - run: coveralls
