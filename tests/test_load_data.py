@@ -1,6 +1,4 @@
 import numpy as np
-import h5py
-import pytest
 import os
 
 import RadClass.DataSet as ds

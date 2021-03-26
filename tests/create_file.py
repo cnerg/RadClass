@@ -1,5 +1,4 @@
 import h5py
-import numpy as np
 
 def create_file(filename, datapath, labels, live, timestamps, spectra):
     # Creating sample dataset
