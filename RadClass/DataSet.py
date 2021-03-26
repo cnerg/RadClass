@@ -11,9 +11,13 @@ class DataSet:
     Attributes:
         live: A numpy array with dead-time corrected instrument recording time.
         timestamps: epoch timestamps for the start(?) of a measurement recording.
+        labels: list of dataset name labels in this order:
+            [ live_label: live dataset name in HDF5 file,
+              timestamps_label: timestamps dataset name in HDF5 file,
+              spectra_label: spectra dataset name in HDF5 file ]
     '''
 
-    def __init__(self):
+    def __init__(self, labels = ['2x4x16LiveTimes', '2x4x16Times', '2x4x16Spectra']):
         '''
         Initializes DataSet class.
         No vectors/data will be stored until methods are called.
@@ -21,6 +25,10 @@ class DataSet:
 
         self.live = None
         self.timestamps = None
+
+        self.live_label = labels[0]
+        self.timestamps_label = labels[1]
+        self.spectra_label = labels[2]
 
     def init_database(self, filename, datapath):
         '''
@@ -48,8 +56,8 @@ class DataSet:
         file = h5py.File(filename, 'r')
         
         # [:] returns a numpy array via h5py
-        self.live = file[datapath][:]
-        self.timestamps = file[datapath][:]
+        self.live = file[datapath + self.live_label][:]
+        self.timestamps = file[datapath + self.timestamps_label][:]
 
         file.close()
 
@@ -76,7 +84,7 @@ class DataSet:
         file = h5py.File(filename, 'r')
 
         # data is a numpy array (as returned by h5py)
-        data = file[datapath][rows]
+        data = file[datapath + self.spectra_label][rows]
         file.close()
 
         return data

@@ -3,20 +3,24 @@ import h5py
 import pytest
 import os
 
-import RadClass.DataSet
+import RadClass.DataSet as ds
 from tests.create_file import create_file
 
 def test_init_database():
-    filename = "testfile.h5"
+    filename = 'testfile.h5'
+    datapath = '/uppergroup/lowergroup/'
+    labels = ['live', 'timestamps', 'spectra']
 
     # randomized data to store (smaller than an actual MUSE file)
     live = np.random.rand(1000,)
     timestamps = np.random.rand(1000,)
     spectra = np.random.rand(10,1000)
 
-    create_file(filename, node, live, timestamps, spectra)
+    create_file(filename, datapath, labels, live, timestamps, spectra)
 
-    test_live, test_timestamps = load.init_database(filename, node)
+    processor = ds.DataSet(labels)
+
+    test_live, test_timestamps = processor.init_database(filename, datapath)
 
     # remove file
     os.remove(filename)
@@ -27,21 +31,24 @@ def test_init_database():
 
 def test_data_slice():
     # Creating sample dataset
-    filename = "testfile.h5"
-    node = 'MUSE00'
+    filename = 'testfile.h5'
+    datapath = '/uppergroup/lowergroup/'
+    labels = ['live', 'timestamps', 'spectra']
 
     # randomized data to store (smaller than an actual MUSE file)
     live = np.random.rand(1000,)
     timestamps = np.random.rand(1000,)
     spectra = np.random.rand(10,1000)
 
-    create_file(filename, node, live, timestamps, spectra)
+    create_file(filename, datapath, labels, live, timestamps, spectra)
+
+    processor = ds.DataSet(labels)
 
     # query 3 random rows in the fake spectra matrix
     rows = np.random.choice(range(10), 3, replace = False)
     # sorted() for correct index syntax
     real_slice = spectra[sorted(rows)]
-    test_slice = load.data_slice(filename, node, sorted(rows))
+    test_slice = processor.data_slice(filename, datapath, sorted(rows))
 
     # remove file
     os.remove(filename)
