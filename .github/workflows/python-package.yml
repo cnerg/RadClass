@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - checkout
-      - run: pip install -U pytest networkx matplotlib scipy coverage
+      - run: pip install -U pytest coverage
       - run: pip install -U coveralls PyYAML more_itertools
       - run: coverage run --source=./trailmap/ -m pytest
       - run: coverage report

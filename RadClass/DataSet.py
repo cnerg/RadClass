@@ -17,7 +17,9 @@ class DataSet:
               spectra_label: spectra dataset name in HDF5 file ]
     '''
 
-    def __init__(self, labels = ['2x4x16LiveTimes', '2x4x16Times', '2x4x16Spectra']):
+    def __init__(self, labels = {'live': '2x4x16LiveTimes',
+                                 'timestamps': '2x4x16Times',
+                                 'spectra': '2x4x16Spectra'}):
         '''
         Initializes DataSet class.
         No vectors/data will be stored until methods are called.
@@ -26,9 +28,9 @@ class DataSet:
         self.live = None
         self.timestamps = None
 
-        self.live_label = labels[0]
-        self.timestamps_label = labels[1]
-        self.spectra_label = labels[2]
+        self.live_label = labels['live']
+        self.timestamps_label = labels['timestamps']
+        self.spectra_label = labels['spectra']
 
     def init_database(self, filename, datapath):
         '''
@@ -50,7 +52,7 @@ class DataSet:
         datapath: HDF5 group/subgroup path to dataset, including prefix,
                    node ID, and analysis element. e.g. '/path/to/dataset'
 
-        Return: live times and timestamps as numpy arrays
+        Return: None; vectors saved in class attributes.
         '''
 
         file = h5py.File(filename, 'r')
@@ -60,8 +62,6 @@ class DataSet:
         self.timestamps = file[datapath + self.timestamps_label][:]
 
         file.close()
-
-        return self.live, self.timestamps
 
     def data_slice(self, filename, datapath, rows):
         '''
