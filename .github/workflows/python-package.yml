@@ -27,7 +27,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install flake8 pytest numpy h5py
+        python -m pip install flake8 pytest numpy h5py coverage
+        python3 -m pip install coveralls PyYAML more_itertools
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
@@ -37,15 +38,8 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest
-
-  coverage:
-    runs-on: ubuntu-latest
-    steps:
-      - checkout
-      - run: pip install -U pytest coverage
-      - run: pip install -U coveralls PyYAML more_itertools
-      - run: coverage run --source=./trailmap/ -m pytest
-      - run: coverage report
-      - run: coverage html
-      - run: coveralls
+        python -m pytest
+        python3 -m coverage run --source=./RadClass/ -m pytest
+        python3 -m coverage report
+        python3 -m coverage html
+        python3 -m coveralls
