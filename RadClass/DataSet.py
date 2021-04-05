@@ -27,10 +27,31 @@ class DataSet:
 
         self.live = None
         self.timestamps = None
+        self.file = None
 
         self.live_label = labels['live']
         self.timestamps_label = labels['timestamps']
         self.spectra_label = labels['spectra']
+
+    def close(self):
+        '''
+        Remove HDF5 file from DataSet memory. This method will only attempt to
+        close a file if it has been loaded into memory already (i.e. self.file
+        has not been already closed or was never loaded).
+        NOTE: This method will have to be called by parent classes using DataSet.
+        That is, RadClass. Since self.file should not be called by any other
+        class or method other than DataSet, it should be destructed once a script
+        completes, regardless of whether DataSet.close() is called. This method
+        is primarily for parent classes (RadClass) that will run through multiple
+        files and thus require DataSet to be reset.
+
+        Return: None; self.file should now be closed/empty.
+        '''
+
+        if self.file is not None:
+            self.file.close()
+            # reset file instance
+            self.file = None
 
     def init_database(self, filename, datapath):
         '''
@@ -55,15 +76,13 @@ class DataSet:
         Return: None; vectors saved in class attributes.
         '''
 
-        file = h5py.File(filename, 'r')
+        self.file = h5py.File(filename, 'r')
         
         # [:] returns a numpy array via h5py
-        self.live = file[datapath + self.live_label][:]
-        self.timestamps = file[datapath + self.timestamps_label][:]
+        self.live = self.file[datapath + self.live_label][:]
+        self.timestamps = self.file[datapath + self.timestamps_label][:]
 
-        file.close()
-
-    def data_slice(self, filename, datapath, rows):
+    def data_slice(self, datapath, rows):
         '''
         Use h5py to read a MINOS MUSE spectra data file and return a specified
         number of rows of the data. The spectral data is a matrix of size
@@ -81,10 +100,7 @@ class DataSet:
         Return: numpy matrix array of rows of data (###x1000 dimensions)
         '''
 
-        file = h5py.File(filename, 'r')
-
         # data is a numpy array (as returned by h5py)
-        data = file[datapath + self.spectra_label][rows]
-        file.close()
+        data = self.file[datapath + self.spectra_label][rows]
 
         return data
