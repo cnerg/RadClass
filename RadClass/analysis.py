@@ -44,9 +44,10 @@ class RadClass:
 
     running = True
 
-    def __init__(self, stride, integration, datapath, filename, analysis, labels = {'live': '2x4x16LiveTimes',
-                                                                                        'timestamps': '2x4x16Times',
-                                                                                        'spectra': '2x4x16Spectra'}):
+    def __init__(self, stride, integration, datapath, filename, analysis,
+                    store_data = False, labels = {'live': '2x4x16LiveTimes',
+                                                    'timestamps': '2x4x16Times',
+                                                    'spectra': '2x4x16Spectra'}):
         '''
         Init for the class, all inputs are required for initialization.
         See class docstring for information on each input.
@@ -63,7 +64,7 @@ class RadClass:
 
         # currently defaulted
         self.binning = 3
-        self.store_data = False
+        self.store_data = store_data
 
     def queue_file(self):
         '''
@@ -179,8 +180,8 @@ class RadClass:
             self.running = self.march()
         
         # print completion summary
-        print("\n...Complete...\n")
-        print("\nFinished analyzing {}.\n\tNumber of observations analyzed: {}".format(self.filename,len(self.processor.timestamps)))
+        print("\n...Complete...")
+        print("Finished analyzing {}.\n\tNumber of observations analyzed: {}".format(self.filename,len(self.processor.timestamps)))
 
     def run_all(self):
         '''
