@@ -14,7 +14,7 @@ def test_init_database():
     # randomized data to store (smaller than an actual MUSE file)
     live = np.random.rand(1000,)
     timestamps = np.random.rand(1000,)
-    spectra = np.random.rand(10,1000)
+    spectra = np.random.rand(1000,1000)
 
     create_file(filename, datapath, labels, live, timestamps, spectra)
 
@@ -41,7 +41,7 @@ def test_data_slice():
     # randomized data to store (smaller than an actual MUSE file)
     live = np.random.rand(1000,)
     timestamps = np.random.rand(1000,)
-    spectra = np.random.rand(10,1000)
+    spectra = np.random.rand(1000,1000)
 
     create_file(filename, datapath, labels, live, timestamps, spectra)
 
@@ -73,7 +73,7 @@ def test_close():
     # randomized data to store (smaller than an actual MUSE file)
     live = np.random.rand(1000,)
     timestamps = np.random.rand(1000,)
-    spectra = np.random.rand(10,1000)
+    spectra = np.random.rand(1000,1000)
 
     create_file(filename, datapath, labels, live, timestamps, spectra)
 
