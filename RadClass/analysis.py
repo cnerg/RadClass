@@ -43,7 +43,6 @@ class RadClass:
     '''
 
     running = True
-    regions = None
 
     def __init__(self, stride, integration, datapath, filename, analysis = None, labels = {'live': '2x4x16LiveTimes',
                                                                                         'timestamps': '2x4x16Times',
@@ -71,6 +70,7 @@ class RadClass:
         Initialize a file for analysis using the load_data.py scripts.
         Collects all information and assumes it exists in the file.
         '''
+        
         self.processor = ds.DataSet(self.labels)
         self.processor.init_database(self.filename, self.datapath)
         # parameters for keeping track of progress through a file
@@ -166,16 +166,13 @@ class RadClass:
         while self.running:
             # print status at set intervals
             if np.where(self.processor.timestamps == self.working_time)[0][0] % 100000 == 0:
+                readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.working_time))
                 print("=========================================================")
-                print("Currently working on timestamps: {}\n".format(time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.working_time))))
+                print("Currently working on timestamps: {}\n".format(readable_time))
             
             # execute analysis and advance in stride
             rows = self.collect_rows()
-            #print(rows)
             data = self.collapse_data(rows)
-            readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.working_time))
-            if np.where(self.processor.timestamps == self.working_time)[0][0] % 100000 == 0:
-                print("\tCounts at {} integration time: {}".format(time.strftime('%H:%M:%S',  time.gmtime(self.working_time)), np.sum(data)))
 
             if self.analysis is not None:
                 self.analysis.run(data)
@@ -196,5 +193,3 @@ class RadClass:
         
         self.queue_file()
         self.iterate()
-
-        print('All done!')
