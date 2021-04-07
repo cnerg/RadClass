@@ -44,7 +44,7 @@ class RadClass:
 
     running = True
 
-    def __init__(self, stride, integration, datapath, filename, analysis = None, labels = {'live': '2x4x16LiveTimes',
+    def __init__(self, stride, integration, datapath, filename, analysis, labels = {'live': '2x4x16LiveTimes',
                                                                                         'timestamps': '2x4x16Times',
                                                                                         'spectra': '2x4x16Spectra'}):
         '''
@@ -70,7 +70,7 @@ class RadClass:
         Initialize a file for analysis using the load_data.py scripts.
         Collects all information and assumes it exists in the file.
         '''
-        
+
         self.processor = ds.DataSet(self.labels)
         self.processor.init_database(self.filename, self.datapath)
         # parameters for keeping track of progress through a file
@@ -174,8 +174,7 @@ class RadClass:
             rows = self.collect_rows()
             data = self.collapse_data(rows)
 
-            if self.analysis is not None:
-                self.analysis.run(data)
+            self.analysis.run(data)
 
             self.running = self.march()
         
