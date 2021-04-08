@@ -46,9 +46,10 @@ class RadClass:
     running = True
 
     def __init__(self, stride, integration, datapath, filename, analysis,
-                    store_data = False, labels = {'live': '2x4x16LiveTimes',
-                                                    'timestamps': '2x4x16Times',
-                                                    'spectra': '2x4x16Spectra'}):
+                    store_data = False, cache = None,
+                                        labels = {'live': '2x4x16LiveTimes',
+                                                  'timestamps': '2x4x16Times',
+                                                  'spectra': '2x4x16Spectra'}):
         '''
         Init for the class, all inputs are required for initialization.
         See class docstring for information on each input.
@@ -58,6 +59,13 @@ class RadClass:
         self.integration = integration
         self.datapath = datapath
         self.filename = filename
+
+        self.store_data = store_data
+        if cache is None:
+            self.cache = self.integration
+        else:
+            self.cache = cache
+
         self.labels = labels
 
         # analysis object that will manipulate data
@@ -65,7 +73,6 @@ class RadClass:
 
         # currently defaulted
         self.binning = 3
-        self.store_data = store_data
 
     def queue_file(self):
         '''
