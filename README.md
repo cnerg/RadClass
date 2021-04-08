@@ -10,9 +10,7 @@ A collection of tools (including data analysis and machine learning applications
 
 * Python 3
 
-Including the following Python packages:
+Including the following Python packages (found in `requirements.txt`):
 
 * h5py
 * numpy
-* pandas
-* matplotlib
