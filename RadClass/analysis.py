@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import time
 
 import RadClass.DataSet as ds
@@ -177,6 +178,9 @@ class RadClass:
 
             self.analysis.run(data)
 
+            if self.store_data:
+                self.storage = pd.concat([self.storage,pd.DataFrame([data], index = [self.working_time])])
+
             self.running = self.march()
         
         # print completion summary
@@ -190,6 +194,11 @@ class RadClass:
         class methods. Although either way is valuable and manual execution
         may be better for debugging and development.
         '''
+
+        if self.store_data:
+            self.storage = pd.DataFrame()
         
         self.queue_file()
         self.iterate()
+
+        self.storage.to_csv('results_'+self.filename)
