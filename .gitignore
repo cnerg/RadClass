@@ -5,3 +5,4 @@ __init__.py
 *.h5
 *.ipynb
 *.csv
+test.py

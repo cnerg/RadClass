@@ -45,8 +45,8 @@ class RadClass:
 
     running = True
 
-    def __init__(self, stride, integration, datapath, filename, analysis,
-                    store_data = False, cache = None,
+    def __init__(self, stride, integration, datapath, filename, analysis = None,
+                    store_data = False, cache_size = None,
                                         labels = {'live': '2x4x16LiveTimes',
                                                   'timestamps': '2x4x16Times',
                                                   'spectra': '2x4x16Spectra'}):
@@ -61,10 +61,10 @@ class RadClass:
         self.filename = filename
 
         self.store_data = store_data
-        if cache is None:
-            self.cache = self.integration
+        if cache_size is None:
+            self.cache_size = self.integration
         else:
-            self.cache = cache
+            self.cache_size = cache_size
 
         self.labels = labels
 
@@ -102,10 +102,17 @@ class RadClass:
 
         # extract requisite data rows
         data_matrix = self.processor.data_slice(self.datapath, rows)
+        #try:
+        #    self.cache[rows[-1]]
+        #except IndexError:
+        #    print("Out of Cache!")
 
         # normalize by live times to produce count rate data
-        for row in range(len(rows)):
-            data_matrix[row] = data_matrix[row] / self.processor.live[row]
+        #for row in range(len(rows)):
+        #    data_matrix[row] = data_matrix[row] / self.processor.live[row]
+        for idx, row in enumerate(rows):
+            dead_time = self.processor.live[row]
+            data_matrix[idx] = data_matrix[idx] / dead_time
 
         # old, more inefficient way of summing
         #total = np.zeros_like(data_matrix[0])
@@ -157,6 +164,7 @@ class RadClass:
         new_i = start_i + self.stride
 
         # stop analysis if EOF reached
+        # NOTE: stops prematurely, only does analysis for windows of full integration time
         if new_i >= len(self.processor.timestamps) or (new_i + self.integration) >= len(self.processor.timestamps):
             return False
         else:
@@ -164,6 +172,19 @@ class RadClass:
             self.working_time = self.processor.timestamps[new_i]
             #print("New timestamp: {}".format(self.processor.timestamps[new_i]))
             return True
+
+    def run_cache(self):
+        start_i, = np.where(self.processor.timestamps == self.working_time)
+        start_i = start_i[0]
+        if start_i + self.cache_size >= len(self.processor.timestamps):
+            end_i = len(self.processor.timestamps) - 1
+        else:
+            end_i = start_i + self.cache_size
+
+        # enumerate number of rows to integrate exclusive of the endpoint
+        cache_rows = np.arange(start_i, end_i)
+
+        self.cache = self.processor.data_slice(self.datapath, cache_rows)
 
     def iterate(self):
         '''
@@ -178,12 +199,15 @@ class RadClass:
                 readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.working_time))
                 print("=========================================================")
                 print("Currently working on timestamps: {}\n".format(readable_time))
+
+            #self.run_cache()
             
             # execute analysis and advance in stride
             rows = self.collect_rows()
             data = self.collapse_data(rows)
 
-            self.analysis.run(data)
+            if self.analysis is not None:
+                self.analysis.run(data)
 
             if self.store_data:
                 self.storage = pd.concat([self.storage,pd.DataFrame([data], index = [self.working_time])])
@@ -208,4 +232,5 @@ class RadClass:
         self.queue_file()
         self.iterate()
 
-        self.storage.to_csv('results_'+self.filename)
+        if self.store_data:
+            self.storage.to_csv('results_'+self.filename)
