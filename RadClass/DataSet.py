@@ -58,10 +58,10 @@ class DataSet:
         Use h5py to load HDF5 MUSE files. Each file typically contains at least
         one MUSE node/detector recording data for 1 month periods.
         Assumes that the HDF5 directory has 3 elements required for analysis:
-        2x4x16LiveTimes - Each iterations measurement time in units of [sec]
+        LiveTimes - Each iterations measurement time in units of [sec]
             corrected for dead time.
-        2x4x16Times - The epoch timestamp for when a measurement occurred.
-        2x4x16Spectra - Measurement data. Recorded as a matrix with each
+        Times - The epoch timestamp for when a measurement occurred.
+        Spectra - Measurement data. Recorded as a matrix with each
             row representing one measurement period with spectrum details
             subdivided into 1000 bins of 3 keV each.
         NOTE: This function only returns the live time and timestamps. The spectra
@@ -72,6 +72,14 @@ class DataSet:
         filename: string path to file, including directory.
         datapath: HDF5 group/subgroup path to dataset, including prefix,
                    node ID, and analysis element. e.g. '/path/to/dataset'
+
+        Attributes:
+        live_times: A numpy array of live detection times corrected for dead time.
+            These are assumed to be approximately 1 second, but a possible TODO
+            would be to discard readings that do not reach a required live time
+            after dead time correction.
+        timestamps: A numpy array of the epoch timestamp at which a detection was
+            recorded. These are used for indexing and processing data.
 
         Return: None; vectors saved in class attributes.
         '''
