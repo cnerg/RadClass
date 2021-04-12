@@ -102,10 +102,6 @@ class RadClass:
 
         # extract requisite data rows
         data_matrix = self.processor.data_slice(self.datapath, rows)
-        #try:
-        #    self.cache[rows[-1]]
-        #except IndexError:
-        #    print("Out of Cache!")
 
         # normalize by live times to produce count rate data
         #for row in range(len(rows)):
@@ -173,19 +169,6 @@ class RadClass:
             #print("New timestamp: {}".format(self.processor.timestamps[new_i]))
             return True
 
-    def run_cache(self):
-        start_i, = np.where(self.processor.timestamps == self.working_time)
-        start_i = start_i[0]
-        if start_i + self.cache_size >= len(self.processor.timestamps):
-            end_i = len(self.processor.timestamps) - 1
-        else:
-            end_i = start_i + self.cache_size
-
-        # enumerate number of rows to integrate exclusive of the endpoint
-        cache_rows = np.arange(start_i, end_i)
-
-        self.cache = self.processor.data_slice(self.datapath, cache_rows)
-
     def iterate(self):
         '''
         Full iteration over the entirety of the MINOS-MUSE data file. Runs
@@ -199,8 +182,6 @@ class RadClass:
                 readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.working_time))
                 print("=========================================================")
                 print("Currently working on timestamps: {}\n".format(readable_time))
-
-            #self.run_cache()
             
             # execute analysis and advance in stride
             rows = self.collect_rows()
