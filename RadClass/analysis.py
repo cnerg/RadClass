@@ -28,9 +28,6 @@ class RadClass:
     filename: The filename for the MINOS MUSE data to be analyzed.
     TODO: Make node and filename -lists- so that multiple nodes and files
         can be processed by the same object.
-    binning: The binning for MUSE data. This is assumed to be 3 keV bins over
-        1000 channels, and is currently defaulted, but may need to be changed
-        in the future as a user input (TODO)
     live_times: A numpy array of live detection times corrected for dead time.
         These are assumed to be approximately 1 second, but a TODO would be
         to discard readings that do not reach a required live time after
@@ -70,9 +67,6 @@ class RadClass:
 
         # analysis object that will manipulate data
         self.analysis = analysis
-
-        # currently defaulted
-        self.binning = 3
 
     def queue_file(self):
         '''
