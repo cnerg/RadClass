@@ -117,7 +117,7 @@ class RadClass:
         '''
 
         # collect start index from tracked timestamp
-        start_i, = np.where(np.isclose(self.processor.timestamps, self.working_time,rtol=1e-10))
+        start_i, = np.where(self.processor.timestamps == self.working_time)
 
         # NOTE: this behavior is currently disabled by the if-statement in
         # march() removing the 'or' portion with allow this to work
@@ -143,7 +143,7 @@ class RadClass:
         '''
 
         # find the working integration interval starting index and advance stride
-        start_i, = np.where(np.isclose(self.processor.timestamps, self.working_time))
+        start_i, = np.where(self.processor.timestamps == self.working_time)
         start_i = start_i[0]
         new_i = start_i + self.stride
 
