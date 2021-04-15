@@ -1,7 +1,8 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: RadClass
+name: Python package
+version: 1.0
 
 on:
   push:
@@ -25,9 +26,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip install --upgrade pip
-        pip install flake8 pytest coverage
-        pip install coveralls PyYAML more_itertools
+        python -m pip install --upgrade pip
+        python -m pip install flake8 pytest numpy h5py pandas
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
@@ -37,8 +37,15 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        python3 -m pytest
-        python3 -m coverage run --source=./RadClass/ -m pytest
-        python3 -m coverage report
-        python3 -m coverage html
-        COVERALLS_REPO_TOKEN=${{ secrets.COVERALLS_REPO_TOKEN }} python3 -m  coveralls
+        pytest
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - checkout
+      - run: pip install -U pytest coverage
+      - run: pip install -U coveralls PyYAML more_itertools
+      - run: coverage run --source=./trailmap/ -m pytest
+      - run: coverage report
+      - run: coverage html
+      - run: coveralls
