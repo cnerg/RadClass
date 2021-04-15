@@ -14,3 +14,4 @@ Including the following Python packages (found in `requirements.txt`):
 
 * h5py
 * numpy
+* pandas
