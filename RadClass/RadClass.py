@@ -90,7 +90,7 @@ class RadClass:
         '''
 
         # extract requisite data rows
-        data_matrix = self.processor.data_slice(self.datapath, rows)
+        data_matrix = np.empty((len(rows),len(self.cache[0])))
 
         # normalize by live times to produce count rate data
         # processor.live can be indexed by appropriate timestamps but
@@ -100,13 +100,12 @@ class RadClass:
                 self.run_cache()
             idx = np.where(self.cache_rows == row)[0][0]
             dead_time = self.processor.live[row]
-            self.cache[idx] = self.cache[idx] / dead_time
+            data_matrix[idx] = self.cache[idx] / dead_time
 
         # old, more inefficient way of summing
         #total = np.zeros_like(data_matrix[0])
         #for row in data_matrix:
         #    total += row
-
         # utilizes numpy architecture to sum data
         total = np.sum(data_matrix, axis=0)
 
