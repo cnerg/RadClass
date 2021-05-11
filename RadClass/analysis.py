@@ -94,9 +94,14 @@ class RadClass:
         # normalize by live times to produce count rate data
         # processor.live can be indexed by appropriate timestamps but
         # data_matrix only has indices for rows.
-        for idx, row in enumerate(rows):
+        for row in rows:
+            if row not in self.cache_rows:
+                print('Need to rerun cache.')
+                print('At',row)
+                self.run_cache()
+            idx = np.where(self.cache_rows == row)[0][0]
             dead_time = self.processor.live[row]
-            data_matrix[idx] = data_matrix[idx] / dead_time
+            self.cache[idx] = self.cache[idx] / dead_time
 
         # old, more inefficient way of summing
         #total = np.zeros_like(data_matrix[0])
@@ -164,8 +169,8 @@ class RadClass:
         else:
             end_i = start_i + self.cache_size
         # enumerate number of rows to integrate exclusive of the endpoint
-        cache_rows = np.arange(start_i, end_i)
-        self.cache = self.processor.data_slice(self.datapath, cache_rows)
+        self.cache_rows = np.arange(start_i, end_i)
+        self.cache = self.processor.data_slice(self.datapath, self.cache_rows)
 
     def iterate(self):
         '''
