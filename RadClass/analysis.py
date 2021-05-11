@@ -156,6 +156,17 @@ class RadClass:
             self.working_time = self.processor.timestamps[new_i]
             return True
 
+    def run_cache(self):
+        start_i, = np.where(self.processor.timestamps == self.working_time)
+        start_i = start_i[0]
+        if start_i + self.cache_size >= len(self.processor.timestamps):
+            end_i = len(self.processor.timestamps) - 1
+        else:
+            end_i = start_i + self.cache_size
+        # enumerate number of rows to integrate exclusive of the endpoint
+        cache_rows = np.arange(start_i, end_i)
+        self.cache = self.processor.data_slice(self.datapath, cache_rows)
+
     def iterate(self):
         '''
         Full iteration over the entirety of the data file. Runs
