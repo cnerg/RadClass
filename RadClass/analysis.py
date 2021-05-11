@@ -96,8 +96,6 @@ class RadClass:
         # data_matrix only has indices for rows.
         for row in rows:
             if row not in self.cache_rows:
-                print('Need to rerun cache.')
-                print('At',row)
                 self.run_cache()
             idx = np.where(self.cache_rows == row)[0][0]
             dead_time = self.processor.live[row]
@@ -215,6 +213,8 @@ class RadClass:
             self.storage = pd.DataFrame()
         
         self.queue_file()
+        # initialize cache
+        self.run_cache()
         self.iterate()
 
         if self.store_data:
