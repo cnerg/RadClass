@@ -90,16 +90,16 @@ class RadClass:
 
         # extract requisite data rows
         data_matrix = np.empty((len(rows),len(self.cache[0])))
-
         # normalize by live times to produce count rate data
         # processor.live can be indexed by appropriate timestamps but
         # data_matrix only has indices for rows.
-        for row in rows:
+        for i, row in enumerate(rows):
             if row not in self.cache_rows:
                 self.run_cache()
             idx = np.where(self.cache_rows == row)[0][0]
             dead_time = self.processor.live[row]
-            data_matrix[idx] = self.cache[idx] / dead_time
+            # i is used for index since data_matrix always starts at index 0
+            data_matrix[i] = self.cache[idx] / dead_time
 
         # old, more inefficient way of summing
         #total = np.zeros_like(data_matrix[0])
