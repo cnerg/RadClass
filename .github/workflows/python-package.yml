@@ -44,4 +44,4 @@ jobs:
         python3 -m coverage run --source=./RadClass/ -m pytest
         python3 -m coverage report
         python3 -m coverage html
-        COVERALLS_REPO_TOKEN=${{ secrets.COVERALLS_REPO_TOKEN }} python3 -m coveralls
+        COVERALLS_REPO_TOKEN=${{ secrets.COVERALLS_REPO_TOKEN }} python3 -m coveralls --service=github
