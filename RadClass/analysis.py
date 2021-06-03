@@ -98,11 +98,6 @@ class RadClass:
             dead_time = self.processor.live[row]
             data_matrix[idx] = data_matrix[idx] / dead_time
 
-        # old, more inefficient way of summing
-        #total = np.zeros_like(data_matrix[0])
-        #for row in data_matrix:
-        #    total += row
-
         # utilizes numpy architecture to sum data
         total = np.sum(data_matrix, axis = 0)
 
