@@ -117,10 +117,7 @@ class RadClass:
         #
         # if the final portion of the file is smaller than a full integration
         # interval, only what is left is collected for this analysis
-        if start_i + self.integration >= len(self.processor.timestamps):
-            end_i = len(self.processor.timestamps) - 1
-        else:
-            end_i = start_i + self.integration
+        end_i = min(start_i + self.integration, len(self.processor.timestamps) - 1)
 
         # enumerate number of rows to integrate exclusive of the endpoint
         rows = np.arange(start_i, end_i)
@@ -137,17 +134,20 @@ class RadClass:
 
         # find the working integration interval starting index and advance stride
         start_i, = np.where(self.processor.timestamps == self.working_time)
-        start_i = start_i[0]
-        new_i = start_i + self.stride
+        new_i = start_i[0] + self.stride
 
         # stop analysis if EOF reached
         # NOTE: stops prematurely, only does analysis for windows of full integration time
-        if new_i >= len(self.processor.timestamps) or (new_i + self.integration) >= len(self.processor.timestamps):
-            return False
-        else:
-            # update working integration interval timestep
+        running = True
+        if new_i >= (len(self.processor.timestamps) or 
+                           (new_i + self.integration) >= len(self.processor.timestamps)):
+            running = False
+
+        if running:  
+             # update working integration interval timestep
             self.working_time = self.processor.timestamps[new_i]
-            return True
+
+        return running
 
     def iterate(self):
         '''
