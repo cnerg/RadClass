@@ -94,9 +94,7 @@ class RadClass:
         # normalize by live times to produce count rate data
         # processor.live can be indexed by appropriate timestamps but
         # data_matrix only has indices for rows.
-        for idx, row in enumerate(rows):
-            dead_time = self.processor.live[row]
-            data_matrix[idx] = data_matrix[idx] / dead_time
+        data_matrix = data_matrix / self.processor.live[rows][:, None]
 
         # utilizes numpy architecture to sum data
         total = np.sum(data_matrix, axis = 0)
