@@ -14,25 +14,23 @@ def test_integration():
               'spectra': '2x4x16Spectra'}
 
     start_date = datetime(2019, 2, 2)
-    #end_date = datetime(2019, 1, 2)
     delta = timedelta(seconds=1)
-
     timestamps = np.array([])
     for i in range(1000):
-        #timestamps = np.append(timestamps, np.format_float_scientific(start_date.timestamp(),precision=15))
         timestamps = np.append(timestamps, start_date.timestamp())
-        #timestamps.append(str(start_date.timestamp()))
         start_date += delta
-    #np.savetxt('timestamps.csv',timestamps, delimiter=',')
+    
     livetime = 0.9
     live = np.full((len(timestamps),), 0.9)
     spectra = np.full((len(timestamps), 1000), np.full((1, 1000) ,10.0))
 
+    # create sample test file with above simulated data
     create_file(filename, datapath, labels, live, timestamps, spectra)
 
     stride = 60
     integration = 60
 
+    # run handler script
     classifier = RadClass(stride, integration, datapath, filename, store_data=True)
     classifier.run_all()
 
