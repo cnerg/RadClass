@@ -4,6 +4,7 @@ import time
 
 import RadClass.DataSet as ds
 
+
 class RadClass:
     '''
     Bulk handler class. Contains most functions needed for processing data
@@ -13,7 +14,7 @@ class RadClass:
     running: indicates whether the end of a file has been reached and thus end.
     stride: The number of seconds (which equals the number of indexes
         to advance after analyzing an integration interval. e.g. if
-        stride = 3, then the next integration period will start 3 seconds ahead.
+        stride = 3, then the next integration period will setp 3 seconds ahead.
         If stride = integration, all observations will be analyzed once.
     integration: The number of seconds (which equals the number of indexes)
         indexes) to integrate the spectrum over. e.g. if integration = 5, then
@@ -27,7 +28,7 @@ class RadClass:
     store_data: boolean; if true, save the results to a CSV file.
     cache_size: (WIP) optional parameter to reduce file I/O and therefore
         increase performance. Indexes a larger selection of rows to analyze.
-        If not provided (None), cache_size is ignored (equals integration time).
+        If not provided (None), cache_size is ignored (equals integration).
     labels: list of dataset name labels in this order:
         [ live_label: live dataset name in HDF5 file,
           timestamps_label: timestamps dataset name in HDF5 file,
@@ -36,11 +37,11 @@ class RadClass:
 
     running = True
 
-    def __init__(self, stride, integration, datapath, filename, analysis = None,
-                    store_data = False, cache_size = None,
-                                        labels = {'live': '2x4x16LiveTimes',
-                                                  'timestamps': '2x4x16Times',
-                                                  'spectra': '2x4x16Spectra'}):
+    def __init__(self, stride, integration, datapath, filename, analysis=None,
+                 store_data=False, cache_size=None,
+                 labels={'live': '2x4x16LiveTimes',
+                         'timestamps': '2x4x16Times',
+                         'spectra': '2x4x16Spectra'}):
         self.stride = stride
         self.integration = integration
         self.datapath = datapath
@@ -64,14 +65,14 @@ class RadClass:
 
         Attributes:
         processor: DataSet object responsible for indexing data from file.
-        working_time: The current working epoch timestamp at which data is being
-            analyzed. This is used to keep track of progress within a file.
+        working_time: The current working epoch timestamp at which data is
+            being analyzed. Used to keep track of progress within a file.
         '''
 
         self.processor = ds.DataSet(self.labels)
         self.processor.init_database(self.filename, self.datapath)
         # parameters for keeping track of progress through a file
-        
+
         self.working_time = self.processor.timestamps[0]
 
     def collapse_data(self, rows):
@@ -80,7 +81,7 @@ class RadClass:
         integration time. Utilizes data_slice() from DataSet to extract
         the requisite rows of data and then numpy.sum(data,axis=0) to combine
         all rows. Assumes negligible drift and accurate energy calibration.
-        
+
         NOTE: Returned data is normalized for live times (1s measurement
         period less dead time). i.e. The returned data is a count rate at
         each bin.
@@ -97,7 +98,7 @@ class RadClass:
         data_matrix = data_matrix / self.processor.live[rows][:, None]
 
         # utilizes numpy architecture to sum data
-        total = np.sum(data_matrix, axis = 0)
+        total = np.sum(data_matrix, axis=0)
 
         return total
 
@@ -117,7 +118,8 @@ class RadClass:
         #
         # if the final portion of the file is smaller than a full integration
         # interval, only what is left is collected for this analysis
-        end_i = min(start_i + self.integration, len(self.processor.timestamps) - 1)
+        end_i = min(start_i + self.integration,
+                    len(self.processor.timestamps) - 1)
 
         # enumerate number of rows to integrate exclusive of the endpoint
         rows = np.arange(start_i, end_i)
@@ -132,19 +134,20 @@ class RadClass:
         Returns: boolean for EOF
         '''
 
-        # find the working integration interval starting index and advance stride
+        # find the working interval starting index and advance stride
         start_i, = np.where(self.processor.timestamps == self.working_time)
         new_i = start_i[0] + self.stride
 
         # stop analysis if EOF reached
-        # NOTE: stops prematurely, only does analysis for windows of full integration time
+        # NOTE: stops prematurely, for windows of full integration only
         running = True
-        if new_i >= (len(self.processor.timestamps) or 
-                           (new_i + self.integration) >= len(self.processor.timestamps)):
+        if new_i >= (len(self.processor.timestamps) or
+                     (new_i + self.integration) >=
+                     len(self.processor.timestamps)):
             running = False
 
-        if running:  
-             # update working integration interval timestep
+        if running:
+            # update working integration interval timestep
             self.working_time = self.processor.timestamps[new_i]
 
         return running
@@ -152,8 +155,8 @@ class RadClass:
     def iterate(self):
         '''
         Full iteration over the entirety of the data file. Runs
-        until EOF reached. Prints progress over the course of the analysis. Only
-        runs for a set node (datapath) with data already queued into class.
+        until EOF reached. Prints progress over the course of the analysis.
+        Only runs for a set node (datapath) with data already queued.
         '''
 
         while self.running:
@@ -162,7 +165,7 @@ class RadClass:
                 readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.working_time))
                 print("=========================================================")
                 print("Currently working on timestamps: {}\n".format(readable_time))
-            
+
             # execute analysis and advance in stride
             rows = self.collect_rows()
             data = self.collapse_data(rows)
@@ -172,10 +175,10 @@ class RadClass:
                 self.analysis.run(data)
 
             if self.store_data:
-                self.storage = pd.concat([self.storage,pd.DataFrame([data], index = [self.working_time])])
+                self.storage = pd.concat([self.storage, pd.DataFrame([data], index = [self.working_time])])
 
             self.running = self.march()
-        
+
         # print completion summary
         print("\n...Complete...")
         print("Finished analyzing {}.\n\tNumber of observations analyzed: {}".format(self.filename,len(self.processor.timestamps)))
@@ -190,7 +193,7 @@ class RadClass:
 
         if self.store_data:
             self.storage = pd.DataFrame()
-        
+
         self.queue_file()
         self.iterate()
 
