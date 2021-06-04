@@ -12,12 +12,15 @@ def test_init_database():
               'timestamps': '2x4x16Times',
               'spectra': '2x4x16Spectra'}
 
-    # randomized data to store (smaller than an actual MUSE file)
-    live = np.random.rand(1000,)
-    timestamps = np.random.rand(1000,)
-    spectra = np.random.rand(1000, 1000)
+    energy_bins = 1000
+    timesteps = 1000
 
-    create_file(filename, datapath, labels, live, timestamps, spectra)
+    # randomized data to store (smaller than an actual MUSE file)
+    live = np.random.rand(timesteps,)
+    timestamps = np.random.rand(timesteps,)
+    spectra = np.random.rand(timesteps, energy_bins)
+
+    create_file(filename, datapath, labels, live, timestamps, spectra, timesteps, energy_bins)
 
     processor = ds.DataSet(labels)
 
@@ -40,12 +43,15 @@ def test_data_slice():
               'timestamps': '2x4x16Times',
               'spectra': '2x4x16Spectra'}
 
-    # randomized data to store (smaller than an actual MUSE file)
-    live = np.random.rand(1000,)
-    timestamps = np.random.rand(1000,)
-    spectra = np.random.rand(1000, 1000)
+    energy_bins = 1000
+    timesteps = 1000
 
-    create_file(filename, datapath, labels, live, timestamps, spectra)
+    # randomized data to store (smaller than an actual MUSE file)
+    live = np.random.rand(timesteps,)
+    timestamps = np.random.rand(timesteps,)
+    spectra = np.random.rand(timesteps, energy_bins)
+
+    create_file(filename, datapath, labels, live, timestamps, spectra, timesteps, energy_bins)
 
     processor = ds.DataSet(labels)
     # load file into processor's "memory"
@@ -73,12 +79,15 @@ def test_close():
               'timestamps': '2x4x16Times',
               'spectra': '2x4x16Spectra'}
 
-    # randomized data to store (smaller than an actual MUSE file)
-    live = np.random.rand(1000,)
-    timestamps = np.random.rand(1000,)
-    spectra = np.random.rand(1000, 1000)
+    energy_bins = 1000
+    timesteps = 1000
 
-    create_file(filename, datapath, labels, live, timestamps, spectra)
+    # randomized data to store (smaller than an actual MUSE file)
+    live = np.random.rand(timesteps,)
+    timestamps = np.random.rand(timesteps,)
+    spectra = np.random.rand(timesteps, energy_bins)
+
+    create_file(filename, datapath, labels, live, timestamps, spectra, timesteps, energy_bins)
 
     processor = ds.DataSet(labels)
     # load file into processor's "memory"

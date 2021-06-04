@@ -15,17 +15,21 @@ def test_integration():
 
     start_date = datetime(2019, 2, 2)
     delta = timedelta(seconds=1)
+
+    energy_bins = 1000
+    timesteps = 1000
+
     timestamps = np.array([])
-    for i in range(1000):
+    for i in range(timesteps):
         timestamps = np.append(timestamps, start_date.timestamp())
         start_date += delta
 
     livetime = 0.9
     live = np.full((len(timestamps),), 0.9)
-    spectra = np.full((len(timestamps), 1000), np.full((1, 1000), 10.0))
+    spectra = np.full((len(timestamps), energy_bins), np.full((1, energy_bins), 10.0))
 
     # create sample test file with above simulated data
-    create_file(filename, datapath, labels, live, timestamps, spectra)
+    create_file(filename, datapath, labels, live, timestamps, spectra, timesteps, energy_bins)
 
     stride = 60
     integration = 60
