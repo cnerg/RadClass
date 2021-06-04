@@ -19,10 +19,7 @@ def test_integration():
     energy_bins = 1000
     timesteps = 1000
 
-    timestamps = np.array([])
-    for i in range(timesteps):
-        timestamps = np.append(timestamps, start_date.timestamp())
-        start_date += delta
+    timestamps = np.arange(start_date, start_date + (timesteps * delta), delta).astype('datetime64[s]').astype('float64')
 
     livetime = 0.9
     live = np.full((len(timestamps),), 0.9)
