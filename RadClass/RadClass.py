@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import time
 import logging
+import progressbar
 
 import RadClass.DataSet as ds
 
@@ -159,10 +160,13 @@ class RadClass:
         until EOF reached. Prints progress over the course of the analysis.
         Only runs for a set node (datapath) with data already queued.
         '''
+        bar = progressbar.ProgressBar(max_value=100)
 
         while self.running:
             # print status at set intervals
             if np.where(self.processor.timestamps == self.working_time)[0][0] % 100000 == 0:
+                bar.update((self.working_time / self.processor.timestamps[-1])*100)
+
                 readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.working_time))
                 logging.info("--\tCurrently working on timestamps: {}\n".format(readable_time))
 
