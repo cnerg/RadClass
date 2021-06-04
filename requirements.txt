@@ -2,4 +2,3 @@ numpy
 h5py
 pandas
 progressbar
-logging
