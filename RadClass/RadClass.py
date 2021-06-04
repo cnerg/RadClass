@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import time
+import logging
 
 import RadClass.DataSet as ds
 
@@ -163,8 +164,7 @@ class RadClass:
             # print status at set intervals
             if np.where(self.processor.timestamps == self.working_time)[0][0] % 100000 == 0:
                 readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.working_time))
-                print("=========================================================")
-                print("Currently working on timestamps: {}\n".format(readable_time))
+                logging.info("--\tCurrently working on timestamps: {}\n".format(readable_time))
 
             # execute analysis and advance in stride
             rows = self.collect_rows()
@@ -175,13 +175,13 @@ class RadClass:
                 self.analysis.run(data)
 
             if self.store_data:
-                self.storage = pd.concat([self.storage, pd.DataFrame([data], index = [self.working_time])])
+                self.storage = pd.concat([self.storage, pd.DataFrame([data], index=[self.working_time])])
 
             self.running = self.march()
 
         # print completion summary
-        print("\n...Complete...")
-        print("Finished analyzing {}.\n\tNumber of observations analyzed: {}".format(self.filename,len(self.processor.timestamps)))
+        logging.info("\n...Complete...")
+        logging.info("Finished analyzing {}.\n\tNumber of observations analyzed: {}".format(self.filename, len(self.processor.timestamps)))
 
     def run_all(self):
         '''
