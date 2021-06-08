@@ -141,7 +141,8 @@ class RadClass:
         # stop analysis if EOF reached
         # NOTE: stops prematurely, for windows of full integration only
         running = True
-        if (new_i >= len(self.processor.timestamps)) or ((new_i + self.integration) >= len(self.processor.timestamps)):
+        if ((new_i >= len(self.processor.timestamps)) or
+                ((new_i + self.integration) >= len(self.processor.timestamps))):
             running = False
 
         if running:
