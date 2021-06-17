@@ -34,7 +34,7 @@ class DataSet:
         self.timestamps_label = labels['timestamps']
         self.spectra_label = labels['spectra']
 
-    def close(self):
+    def close_file(self):
         '''
         Remove HDF5 file from DataSet memory. This method will only attempt to
         close a file if it has been loaded into memory already (i.e. self.file

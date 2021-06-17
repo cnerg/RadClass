@@ -1,25 +1,27 @@
 import numpy as np
-import os
+import pytest
 
 import RadClass.DataSet as ds
-import tests.create_file as file
+import tests.test_data as test_data
+
+# randomized data to store (smaller than an actual MUSE file)
+live = np.random.rand(test_data.timesteps,)
+timestamps = np.random.rand(test_data.timesteps,)
+spectra = np.random.rand(test_data.timesteps, test_data.energy_bins)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def init_test_file():
+    test_data.create_file(live, timestamps, spectra)
 
 
 def test_init_database():
-    # randomized data to store (smaller than an actual MUSE file)
-    live = np.random.rand(file.timesteps,)
-    timestamps = np.random.rand(file.timesteps,)
-    spectra = np.random.rand(file.timesteps, file.energy_bins)
+    processor = ds.DataSet(test_data.labels)
 
-    file.create_file(live, timestamps, spectra)
-
-    processor = ds.DataSet(file.labels)
-
-    processor.init_database(file.filename, file.datapath)
+    processor.init_database(test_data.filename, test_data.datapath)
 
     # remove file
-    processor.close()
-    os.remove(file.filename)
+    processor.close_file()
 
     # checks if arrays were saved to file and read back correctly
     np.testing.assert_almost_equal(processor.live, live, decimal=5)
@@ -27,46 +29,29 @@ def test_init_database():
 
 
 def test_data_slice():
-    # randomized data to store (smaller than an actual MUSE file)
-    live = np.random.rand(file.timesteps,)
-    timestamps = np.random.rand(file.timesteps,)
-    spectra = np.random.rand(file.timesteps, file.energy_bins)
-
-    file.create_file(live, timestamps, spectra)
-
-    processor = ds.DataSet(file.labels)
+    processor = ds.DataSet(test_data.labels)
     # load file into processor's "memory"
-    processor.init_database(file.filename, file.datapath)
+    processor.init_database(test_data.filename, test_data.datapath)
 
     # query 3 random rows in the fake spectra matrix
     rows = np.random.choice(range(10), 3, replace=False)
     # sorted() for correct index syntax
     real_slice = spectra[sorted(rows)]
-    test_slice = processor.data_slice(file.datapath, sorted(rows))
+    test_slice = processor.data_slice(test_data.datapath, sorted(rows))
 
     # remove file
-    processor.close()
-    os.remove(file.filename)
+    processor.close_file()
 
     # check the entire array for approximately equal
     np.testing.assert_almost_equal(test_slice, real_slice, decimal=5)
 
 
 def test_close():
-    # randomized data to store (smaller than an actual MUSE file)
-    live = np.random.rand(file.timesteps,)
-    timestamps = np.random.rand(file.timesteps,)
-    spectra = np.random.rand(file.timesteps, file.energy_bins)
-
-    file.create_file(live, timestamps, spectra)
-
-    processor = ds.DataSet(file.labels)
+    processor = ds.DataSet(test_data.labels)
     # load file into processor's "memory"
-    processor.init_database(file.filename, file.datapath)
+    processor.init_database(test_data.filename, test_data.datapath)
 
-    processor.close()
+    processor.close_file()
     # fails if file was not closed
     # therefore processor.file = True because it is still a file
     assert not processor.file
-
-    os.remove(file.filename)
