@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import os
 
 import RadClass.DataSet as ds
 import tests.test_data as test_data
@@ -12,7 +13,8 @@ spectra = np.random.rand(test_data.timesteps, test_data.energy_bins)
 
 @pytest.fixture(scope="session", autouse=True)
 def init_test_file():
-    test_data.create_file(live, timestamps, spectra)
+    yield test_data.create_file(live, timestamps, spectra)
+    os.remove(test_data.filename)
 
 
 def test_init_database():
