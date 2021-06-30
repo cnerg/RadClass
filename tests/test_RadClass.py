@@ -18,10 +18,11 @@ spectra = np.full((len(timestamps), test_data.energy_bins),
                   np.full((1, test_data.energy_bins), 10.0))
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def init_test_file():
     # create sample test file with above simulated data
     yield test_data.create_file(live, timestamps, spectra)
+    os.remove(test_data.filename)
 
 
 class NullAnalysis():

@@ -11,8 +11,9 @@ timestamps = np.random.rand(test_data.timesteps,)
 spectra = np.random.rand(test_data.timesteps, test_data.energy_bins)
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def init_test_file():
+    # create sample test file with above simulated data
     yield test_data.create_file(live, timestamps, spectra)
     os.remove(test_data.filename)
 
