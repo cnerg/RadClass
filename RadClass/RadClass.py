@@ -75,7 +75,7 @@ class RadClass:
 
         self.working_time = self.processor.timestamps[0]
 
-    def collapse_data(self, rows):
+    def collapse_data(self, rows_idx):
         '''
         Integrates a subset of data from the total data matrix given some
         integration time. Utilizes data_slice() from DataSet to extract
@@ -90,17 +90,10 @@ class RadClass:
         '''
 
         # extract requisite data rows
-        data_matrix = np.empty((len(rows), len(self.cache[0])))
         # normalize by live times to produce count rate data
-        # processor.live can be indexed by appropriate timestamps but
-        # data_matrix only has indices for rows.
-        for i, row in enumerate(rows):
-            if row not in self.cache_rows:
-                self.run_cache()
-            idx = np.where(self.cache_rows == row)[0][0]
-            dead_time = self.processor.live[row]
-            # i is used for index since data_matrix always starts at index 0
-            data_matrix[i] = self.cache[idx] / dead_time
+        # processor.live can be indexed by appropriate timestamps
+        # (i.e. row indices).
+        data_matrix = self.cache[rows_idx] / self.processor.live[rows_idx]
 
         # old, more inefficient way of summing
         # total = np.zeros_like(data_matrix[0])
@@ -131,8 +124,13 @@ class RadClass:
                     len(self.processor.timestamps) - 1)
 
         # enumerate number of rows to integrate exclusive of the endpoint
-        rows = np.arange(start_i, end_i)
-        return rows
+        rows_idx = np.arange(start_i, end_i) - self.cache_idx[0]
+
+        if np.count_nonzero(np.isin(self.cache_idx, rows_idx)) != self.integration:
+            self.run_cache()
+            rows_idx = np.arange(start_i, end_i) - self.cache_idx[0]
+
+        return rows_idx
 
     def march(self):
         '''
@@ -163,13 +161,10 @@ class RadClass:
     def run_cache(self):
         start_i, = np.where(self.processor.timestamps == self.working_time)
         start_i = start_i[0]
-        if start_i + self.cache_size >= len(self.processor.timestamps):
-            end_i = len(self.processor.timestamps) - 1
-        else:
-            end_i = start_i + self.cache_size
+        end_i = min(start_i + self.cache_size, len(self.processor.timestamps) - 1)
         # enumerate number of rows to integrate exclusive of the endpoint
-        self.cache_rows = np.arange(start_i, end_i)
-        self.cache = self.processor.data_slice(self.datapath, self.cache_rows)
+        self.cache_idx = np.arange(start_i, end_i)
+        self.cache = self.processor.data_slice(self.datapath, self.cache_idx)
 
     def iterate(self):
         '''
@@ -191,8 +186,8 @@ class RadClass:
                 logging.info("--\tCurrently working on timestamps: {}\n".format(readable_time))
 
             # execute analysis and advance in stride
-            rows = self.collect_rows()
-            data = self.collapse_data(rows)
+            rows_idx = self.collect_rows()
+            data = self.collapse_data(rows_idx)
 
             # pass data to analysis object if available
             if self.analysis is not None:
