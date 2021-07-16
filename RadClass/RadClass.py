@@ -93,7 +93,7 @@ class RadClass:
         # normalize by live times to produce count rate data
         # processor.live can be indexed by appropriate timestamps
         # (i.e. row indices).
-        data_matrix = self.cache[rows_idx] / self.processor.live[rows_idx]
+        data_matrix = self.cache[rows_idx-self.cache_idx[0]] / self.processor.live[rows_idx][:, None]
 
         # old, more inefficient way of summing
         # total = np.zeros_like(data_matrix[0])
@@ -124,12 +124,12 @@ class RadClass:
                     len(self.processor.timestamps) - 1)
 
         # enumerate number of rows to integrate exclusive of the endpoint
-        rows_idx = np.arange(start_i, end_i) - self.cache_idx[0]
+        rows_idx = np.arange(start_i, end_i)
 
+        # check if rows are stored in cache
         if np.count_nonzero(np.isin(self.cache_idx,
                             rows_idx)) != self.integration:
             self.run_cache()
-            rows_idx = np.arange(start_i, end_i) - self.cache_idx[0]
 
         return rows_idx
 
