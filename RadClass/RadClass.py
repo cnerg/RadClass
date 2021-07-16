@@ -126,7 +126,8 @@ class RadClass:
         # enumerate number of rows to integrate exclusive of the endpoint
         rows_idx = np.arange(start_i, end_i) - self.cache_idx[0]
 
-        if np.count_nonzero(np.isin(self.cache_idx, rows_idx)) != self.integration:
+        if np.count_nonzero(np.isin(self.cache_idx,
+                            rows_idx)) != self.integration:
             self.run_cache()
             rows_idx = np.arange(start_i, end_i) - self.cache_idx[0]
 
@@ -149,7 +150,8 @@ class RadClass:
         # NOTE: stops prematurely, for windows of full integration only
         running = True
         if ((new_i >= len(self.processor.timestamps)) or
-                ((new_i + self.integration) >= len(self.processor.timestamps))):
+                ((new_i + self.integration)
+                 >= len(self.processor.timestamps))):
             running = False
 
         if running:
@@ -161,7 +163,8 @@ class RadClass:
     def run_cache(self):
         start_i, = np.where(self.processor.timestamps == self.working_time)
         start_i = start_i[0]
-        end_i = min(start_i + self.cache_size, len(self.processor.timestamps) - 1)
+        end_i = min(start_i + self.cache_size,
+                    len(self.processor.timestamps) - 1)
         # enumerate number of rows to integrate exclusive of the endpoint
         self.cache_idx = np.arange(start_i, end_i)
         self.cache = self.processor.data_slice(self.datapath, self.cache_idx)
@@ -173,7 +176,8 @@ class RadClass:
         Only runs for a set node (datapath) with data already queued.
         '''
         bar = progressbar.ProgressBar(max_value=100, redirect_stdout=True)
-        inverse_dt = 1.0 / (self.processor.timestamps[-1] - self.processor.timestamps[0])
+        inverse_dt = 1.0 / (self.processor.timestamps[-1]
+                            - self.processor.timestamps[0])
 
         log_interval = 10000  # number of samples analyzed between log updates
         running = True  # tracks whether to end analysis
