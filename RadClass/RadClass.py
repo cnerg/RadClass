@@ -67,6 +67,8 @@ class RadClass:
         processor: DataSet object responsible for indexing data from file.
         working_time: The current working epoch timestamp at which data is
             being analyzed. Used to keep track of progress within a file.
+        start_i: Data index of value working_time. Used in indexing rows
+            for analysis.
         '''
 
         self.processor = ds.DataSet(self.labels)
@@ -74,8 +76,9 @@ class RadClass:
         # parameters for keeping track of progress through a file
 
         self.working_time = self.processor.timestamps[0]
+        self.start_i = 0
 
-    def collapse_data(self, rows):
+    def collapse_data(self, rows_idx):
         '''
         Integrates a subset of data from the total data matrix given some
         integration time. Utilizes data_slice() from DataSet to extract
@@ -90,13 +93,15 @@ class RadClass:
         '''
 
         # extract requisite data rows
-        data_matrix = self.processor.data_slice(self.datapath, rows)
-
         # normalize by live times to produce count rate data
-        # processor.live can be indexed by appropriate timestamps but
-        # data_matrix only has indices for rows.
-        data_matrix = data_matrix / self.processor.live[rows][:, None]
+        # processor.live can be indexed by appropriate timestamps
+        # (i.e. row indices).
+        data_matrix = self.cache[rows_idx-self.cache_idx[0]] / self.processor.live[rows_idx][:, None]
 
+        # old, more inefficient way of summing
+        # total = np.zeros_like(data_matrix[0])
+        # for row in data_matrix:
+        #    total += row
         # utilizes numpy architecture to sum data
         total = np.sum(data_matrix, axis=0)
 
@@ -110,20 +115,22 @@ class RadClass:
         Return: list of rows for data indexing
         '''
 
-        # collect start index from tracked timestamp
-        start_i, = np.where(self.processor.timestamps == self.working_time)
-
         # NOTE: this behavior is currently disabled by the if-statement in
         # march() removing the 'or' portion with allow this to work
         #
         # if the final portion of the file is smaller than a full integration
         # interval, only what is left is collected for this analysis
-        end_i = min(start_i + self.integration,
+        end_i = min(self.start_i + self.integration,
                     len(self.processor.timestamps) - 1)
 
         # enumerate number of rows to integrate exclusive of the endpoint
-        rows = np.arange(start_i, end_i)
-        return rows
+        rows_idx = np.arange(self.start_i, end_i)
+
+        # check if all rows are stored in cache by checking for last row
+        if end_i not in self.cache_idx:
+            self.run_cache()
+
+        return rows_idx
 
     def march(self):
         '''
@@ -134,22 +141,30 @@ class RadClass:
         Returns: boolean for EOF
         '''
 
-        # find the working interval starting index and advance stride
-        start_i, = np.where(self.processor.timestamps == self.working_time)
-        new_i = start_i[0] + self.stride
+        # increment the working interval starting index and advance stride
+        new_i = self.start_i + self.stride
 
         # stop analysis if EOF reached
         # NOTE: stops prematurely, for windows of full integration only
         running = True
         if ((new_i >= len(self.processor.timestamps)) or
-                ((new_i + self.integration) >= len(self.processor.timestamps))):
+                ((new_i + self.integration)
+                 >= len(self.processor.timestamps))):
             running = False
 
         if running:
             # update working integration interval timestep
             self.working_time = self.processor.timestamps[new_i]
+            self.start_i = new_i
 
         return running
+
+    def run_cache(self):
+        end_i = min(self.start_i + self.cache_size,
+                    len(self.processor.timestamps) - 1)
+        # enumerate number of rows to integrate exclusive of the endpoint
+        self.cache_idx = np.arange(self.start_i, end_i)
+        self.cache = self.processor.data_slice(self.datapath, self.cache_idx)
 
     def iterate(self):
         '''
@@ -158,7 +173,8 @@ class RadClass:
         Only runs for a set node (datapath) with data already queued.
         '''
         bar = progressbar.ProgressBar(max_value=100, redirect_stdout=True)
-        inverse_dt = 1.0 / (self.processor.timestamps[-1] - self.processor.timestamps[0])
+        inverse_dt = 1.0 / (self.processor.timestamps[-1]
+                            - self.processor.timestamps[0])
 
         log_interval = 10000  # number of samples analyzed between log updates
         running = True  # tracks whether to end analysis
@@ -171,8 +187,8 @@ class RadClass:
                 logging.info("--\tCurrently working on timestamps: {}\n".format(readable_time))
 
             # execute analysis and advance in stride
-            rows = self.collect_rows()
-            data = self.collapse_data(rows)
+            rows_idx = self.collect_rows()
+            data = self.collapse_data(rows_idx)
 
             # pass data to analysis object if available
             if self.analysis is not None:
@@ -199,6 +215,8 @@ class RadClass:
             self.storage = pd.DataFrame()
 
         self.queue_file()
+        # initialize cache
+        self.run_cache()
         self.iterate()
 
         if self.store_data:
