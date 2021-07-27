@@ -102,3 +102,24 @@ def test_cache():
     np.testing.assert_almost_equal(results, expected[0], decimal=2)
 
     os.remove('results.csv')
+
+
+def test_stride():
+    stride = 100
+    integration = 50
+
+    # run handler script
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, store_data=True)
+    classifier.run_all()
+
+    # the resulting 1-hour observation should be:
+    #   counts * integration / live-time
+    expected = spectra * integration / test_data.livetime
+    expected_samples = int(test_data.timesteps /
+                           (integration + (stride - integration)))
+    results = np.genfromtxt('results.csv', delimiter=',')[1:, 1:]
+    np.testing.assert_almost_equal(results[0], expected[0], decimal=2)
+    np.testing.assert_equal(len(results), expected_samples)
+
+    os.remove('results.csv')
