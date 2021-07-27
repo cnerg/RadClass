@@ -49,10 +49,12 @@ def test_init():
     stride = 60
     integration = 60
     cache_size = 10000
+    stop_time = 2e9
 
     classifier = RadClass(stride=stride, integration=integration,
                           datapath=test_data.datapath,
-                          filename=test_data.filename, cache_size=cache_size,
+                          filename=test_data.filename, store_data=store_data,
+                          cache_size=cache_size, stop_time=stop_time,
                           labels=test_data.labels)
 
     np.testing.assert_equal(stride, classifier.stride)
@@ -60,6 +62,7 @@ def test_init():
     np.testing.assert_equal(test_data.datapath, classifier.datapath)
     np.testing.assert_equal(test_data.filename, classifier.filename)
     np.testing.assert_equal(cache_size, classifier.cache_size)
+    np.testing.assert_equal(stop_time, classifier.stop_time)
     np.testing.assert_equal(test_data.labels, classifier.labels)
 
 
@@ -134,4 +137,27 @@ def test_write():
     results = np.genfromtxt(filename, delimiter=',')[1, 1:]
     np.testing.assert_almost_equal(results, expected, decimal=2)
 
-    os.remove(filename)
+    os.remove('results.csv')
+
+
+def test_stop():
+    # arbitrary but results in less than # of timestamps
+    periods = 5
+
+    stride = 60
+    integration = 60
+    cache_size = 100
+    # stop after n integration periods
+    stop_time = timestamps[integration*periods-1]
+
+    # run handler script
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, store_data=True,
+                          cache_size=cache_size, stop_time=stop_time)
+    classifier.run_all()
+
+    results = np.genfromtxt('results.csv', delimiter=',')[1:]
+    print(results)
+    np.testing.assert_equal(len(results), periods)
+
+    os.remove('results.csv')

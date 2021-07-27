@@ -27,9 +27,13 @@ class RadClass:
     filename: The filename for the data to be analyzed.
     TODO: Make node and filename -lists- so that multiple nodes and files
         can be processed by the same object.
-    cache_size: (WIP) optional parameter to reduce file I/O and therefore
+    store_data: boolean; if true, save the results to a CSV file.
+    cache_size: Optional parameter to reduce file I/O and therefore
         increase performance. Indexes a larger selection of rows to analyze.
         If not provided (None), cache_size is ignored (equals integration).
+    stop_time: Unix epoch timestamp, in units of seconds. All data in filename
+        earlier and up to stop_time will be analyzed. Useful for processing
+        only a portion of a data file. Default: None, ignored.
     labels: list of dataset name labels in this order:
         [ live_label: live dataset name in HDF5 file,
           timestamps_label: timestamps dataset name in HDF5 file,
@@ -37,7 +41,7 @@ class RadClass:
     '''
 
     def __init__(self, stride, integration, datapath, filename, analysis=None,
-                 cache_size=None,
+                 store_data=False, cache_size=None, stop_time=None,
                  labels={'live': '2x4x16LiveTimes',
                          'timestamps': '2x4x16Times',
                          'spectra': '2x4x16Spectra'}):
@@ -51,6 +55,7 @@ class RadClass:
         else:
             self.cache_size = cache_size
 
+        self.stop_time = stop_time
         self.labels = labels
 
         # analysis object that will manipulate data
@@ -148,6 +153,10 @@ class RadClass:
         if ((new_i >= len(self.processor.timestamps)) or
                 ((new_i + self.integration)
                  >= len(self.processor.timestamps))):
+            running = False
+        # ends analysis if stop_time would be reached this iteration
+        elif (self.stop_time is not None and
+              self.working_time+self.integration > self.stop_time):
             running = False
 
         if running:
