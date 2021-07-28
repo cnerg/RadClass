@@ -28,6 +28,19 @@ def init_test_file():
     os.remove(test_data.filename)
 
 
+def test_init():
+    significance = 0.1
+    gross = False
+    energy_bins = 10
+    analysis = H0(significance=significance,
+                  gross=gross,
+                  energy_bins=energy_bins)
+
+    np.testing.assert_equal(analysis.significance, significance)
+    np.testing.assert_equal(analysis.gross, gross)
+    np.testing.assert_equal(analysis.triggers.shape, (0, energy_bins+1))
+
+
 def test_gross():
     stride = 10
     integration = 10
