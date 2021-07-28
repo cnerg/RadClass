@@ -54,3 +54,22 @@ def test_channel():
     np.testing.assert_equal(analysis.triggers.shape,
                             (1, test_data.energy_bins+1))
     np.testing.assert_equal(analysis.triggers.shape[0], 1)
+
+
+def test_write():
+    stride = 10
+    integration = 10
+    filename = 'h0test.csv'
+
+    # run handler script with analysis parameter
+    analysis = H0()
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, analysis=analysis)
+    classifier.run_all()
+    analysis.write(filename)
+
+    results = np.genfromtxt(filename, delimiter=',')[1:]
+    # 5 columns are required since the index is also saved (via pandas)
+    np.testing.assert_equal(results.shape, (1, 5))
+
+    os.remove(filename)
