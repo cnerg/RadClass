@@ -38,13 +38,12 @@ class H0:
         self.x1 = None
 
         # arrays are structured as matrices (nxm) for writing to file
-        self.trigger_times = np.empty((0, 1))
         if self.gross:
-            # three values are saved: x1, x2, and p-val for rejected hypotheses
-            self.triggers = np.empty((0, 3))
+            # four values are saved: timestamp, x1, x2, and p-val
+            self.triggers = np.empty((0, 4))
         else:
             # all p-vals for rejected hypothesis are saved in this sparse array
-            self.triggers = np.empty((0, energy_bins))
+            self.triggers = np.empty((0, energy_bins+1))
 
     def run(self, data, timestamp):
         '''
@@ -67,11 +66,9 @@ class H0:
                 # only save instances with rejected null hypothesesf
                 if pval <= self.significance:
                     self.triggers = np.append(self.triggers,
-                                              [[pval, self.x1, self.x2]],
+                                              [[timestamp, pval,
+                                                self.x1, self.x2]],
                                               axis=0)
-                    self.trigger_times = np.append(self.trigger_times,
-                                                   [[timestamp]],
-                                                   axis=0)
 
                 # saving data for the next integration step
                 self.x1 = self.x2
@@ -92,11 +89,9 @@ class H0:
                         rejections[i] = pvals[i]
                 if np.nonzero(rejections)[0].size != 0:
                     self.triggers = np.append(self.triggers,
-                                              [rejections],
+                                              [np.insert(rejections,
+                                                         0, timestamp)],
                                               axis=0)
-                    self.trigger_times = np.append(self.trigger_times,
-                                                   [[timestamp]],
-                                                   axis=0)
 
                 # saving data for the next integration step
                 self.x1 = self.x2
@@ -108,13 +103,13 @@ class H0:
         '''
 
         results = pd.DataFrame()
-        results['timestamps'] = self.trigger_times[:, 0]
-        if len(self.triggers[0]) == 3:
-            results['pval'] = self.triggers[:, 0]
-            results['x1'] = self.triggers[:, 1]
-            results['x2'] = self.triggers[:, 2]
+        results['timestamps'] = self.triggers[:, 0]
+        if len(self.triggers[0]) == 4:
+            results['pval'] = self.triggers[:, 1]
+            results['x1'] = self.triggers[:, 2]
+            results['x2'] = self.triggers[:, 3]
         else:
-            for i in range(len(self.triggers[0])):
+            for i in range(len(self.triggers[0, 1:])):
                 results[str(i)] = self.triggers[:, i]
 
         results.to_csv(filename, sep=',')

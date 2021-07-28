@@ -7,7 +7,7 @@ labels = {'live': '2x4x16LiveTimes',
           'spectra': '2x4x16Spectra'}
 
 energy_bins = 1000
-timesteps = 1000
+timesteps = 100
 livetime = 0.9
 
 

@@ -29,7 +29,7 @@ class NullAnalysis():
     changed = False
 
     # tracks whether this class is called properly
-    def run(self, data):
+    def run(self, data, timestamp):
         self.changed = True
 
 
