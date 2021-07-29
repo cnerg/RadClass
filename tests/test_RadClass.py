@@ -138,8 +138,6 @@ def test_write():
     results = np.genfromtxt(filename, delimiter=',')[1, 1:]
     np.testing.assert_almost_equal(results, expected, decimal=2)
 
-    os.remove('results.csv')
-
 
 def test_start():
     stride = int(test_data.timesteps/10)
