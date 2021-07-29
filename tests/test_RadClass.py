@@ -34,8 +34,8 @@ class NullAnalysis():
 
 
 def test_analysis():
-    stride = 60
-    integration = 60
+    stride = int(test_data.timesteps/10)
+    integration = int(test_data.timesteps/10)
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
@@ -46,8 +46,9 @@ def test_analysis():
 
 
 def test_init():
-    stride = 60
-    integration = 60
+    stride = int(test_data.timesteps/10)
+    integration = int(test_data.timesteps/10)
+    store_data = True
     cache_size = 10000
     stop_time = 2e9
 
@@ -67,8 +68,8 @@ def test_init():
 
 
 def test_integration():
-    stride = 60
-    integration = 60
+    stride = int(test_data.timesteps/10)
+    integration = int(test_data.timesteps/10)
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
@@ -83,8 +84,8 @@ def test_integration():
 
 
 def test_cache():
-    stride = 60
-    integration = 60
+    stride = int(test_data.timesteps/10)
+    integration = int(test_data.timesteps/10)
     cache_size = 100
 
     # run handler script
@@ -140,12 +141,29 @@ def test_write():
     os.remove('results.csv')
 
 
+def test_start():
+    stride = int(test_data.timesteps/10)
+    integration = int(test_data.timesteps/10)
+    cache_size = 100
+    # start one integration period in
+    start_time = timestamps[integration]
+
+    # run handler script
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, store_data=True,
+                          cache_size=cache_size, start_time=start_time)
+    classifier.run_all()
+
+    np.testing.assert_equal(len(classifier.storage),
+                            test_data.timesteps/integration-1)
+
+
 def test_stop():
     # arbitrary but results in less than # of timestamps
     periods = 5
 
-    stride = 60
-    integration = 60
+    stride = int(test_data.timesteps/10)
+    integration = int(test_data.timesteps/10)
     cache_size = 100
     # stop after n integration periods
     stop_time = timestamps[integration*periods-1]
@@ -156,8 +174,4 @@ def test_stop():
                           cache_size=cache_size, stop_time=stop_time)
     classifier.run_all()
 
-    results = np.genfromtxt('results.csv', delimiter=',')[1:]
-    print(results)
-    np.testing.assert_equal(len(results), periods)
-
-    os.remove('results.csv')
+    np.testing.assert_equal(len(classifier.storage), periods)

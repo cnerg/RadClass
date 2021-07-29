@@ -31,6 +31,9 @@ class RadClass:
     cache_size: Optional parameter to reduce file I/O and therefore
         increase performance. Indexes a larger selection of rows to analyze.
         If not provided (None), cache_size is ignored (equals integration).
+    start_time: Unix epoch timestamp, in units of seconds. All data in filename
+        at and after this point will be analyzed. Useful for processing only
+        a portion of a data file. Default: None, ignored.
     stop_time: Unix epoch timestamp, in units of seconds. All data in filename
         earlier and up to stop_time will be analyzed. Useful for processing
         only a portion of a data file. Default: None, ignored.
@@ -41,7 +44,8 @@ class RadClass:
     '''
 
     def __init__(self, stride, integration, datapath, filename, analysis=None,
-                 store_data=False, cache_size=None, stop_time=None,
+                 store_data=False, cache_size=None, start_time=None,
+                 stop_time=None,
                  labels={'live': '2x4x16LiveTimes',
                          'timestamps': '2x4x16Times',
                          'spectra': '2x4x16Spectra'}):
@@ -55,6 +59,7 @@ class RadClass:
         else:
             self.cache_size = cache_size
 
+        self.start_time = start_time
         self.stop_time = stop_time
         self.labels = labels
 
@@ -78,7 +83,10 @@ class RadClass:
         self.processor.init_database(self.filename, self.datapath)
         # parameters for keeping track of progress through a file
 
-        self.working_time = self.processor.timestamps[0]
+        if self.start_time is not None:
+            self.working_time = self.processor.timestamps[self.processor.timestamps > self.start_time][0]
+        else:
+            self.working_time = self.processor.timestamps[0]
         self.start_i = 0
 
     def collapse_data(self, rows_idx):
