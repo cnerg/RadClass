@@ -39,8 +39,7 @@ def test_analysis():
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, analysis=NullAnalysis(),
-                          store_data=True)
+                          test_data.filename, analysis=NullAnalysis())
     classifier.run_all()
 
     np.testing.assert_equal(True, classifier.analysis.changed)
@@ -49,19 +48,17 @@ def test_analysis():
 def test_init():
     stride = 60
     integration = 60
-    store_data = True
     cache_size = 10000
 
     classifier = RadClass(stride=stride, integration=integration,
                           datapath=test_data.datapath,
-                          filename=test_data.filename, store_data=store_data,
-                          cache_size=cache_size, labels=test_data.labels)
+                          filename=test_data.filename, cache_size=cache_size,
+                          labels=test_data.labels)
 
     np.testing.assert_equal(stride, classifier.stride)
     np.testing.assert_equal(integration, classifier.integration)
     np.testing.assert_equal(test_data.datapath, classifier.datapath)
     np.testing.assert_equal(test_data.filename, classifier.filename)
-    np.testing.assert_equal(store_data, classifier.store_data)
     np.testing.assert_equal(cache_size, classifier.cache_size)
     np.testing.assert_equal(test_data.labels, classifier.labels)
 
@@ -72,16 +69,14 @@ def test_integration():
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=True)
+                          test_data.filename)
     classifier.run_all()
 
     # the resulting 1-hour observation should be:
     #   counts * integration / live-time
-    expected = spectra / test_data.livetime
-    results = np.genfromtxt('results.csv', delimiter=',')[1, 1:]
+    expected = spectra * integration / test_data.livetime
+    results = classifier.storage.to_numpy()[1]
     np.testing.assert_almost_equal(results, expected[0], decimal=2)
-
-    os.remove('results.csv')
 
 
 def test_cache():
@@ -91,17 +86,15 @@ def test_cache():
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=True,
+                          test_data.filename,
                           cache_size=cache_size)
     classifier.run_all()
 
     # the resulting 1-hour observation should be:
     #   counts * integration / live-time
-    expected = spectra / test_data.livetime
-    results = np.genfromtxt('results.csv', delimiter=',')[1, 1:]
+    expected = spectra * integration / test_data.livetime
+    results = classifier.storage.to_numpy()[1]
     np.testing.assert_almost_equal(results, expected[0], decimal=2)
-
-    os.remove('results.csv')
 
 
 def test_stride():
@@ -110,7 +103,7 @@ def test_stride():
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=True)
+                          test_data.filename)
     classifier.run_all()
 
     # the resulting 1-hour observation should be:
@@ -118,8 +111,27 @@ def test_stride():
     expected = spectra * integration / test_data.livetime
     expected_samples = int(test_data.timesteps /
                            (integration + (stride - integration)))
-    results = np.genfromtxt('results.csv', delimiter=',')[1:, 1:]
-    np.testing.assert_almost_equal(results[0], expected[0], decimal=2)
-    np.testing.assert_equal(len(results), expected_samples)
+    np.testing.assert_almost_equal(classifier.storage.iloc[0],
+                                   expected[0],
+                                   decimal=2)
+    np.testing.assert_equal(len(classifier.storage), expected_samples)
 
-    os.remove('results.csv')
+
+def test_write():
+    stride = 60
+    integration = 60
+    filename = 'test_results.csv'
+
+    # run handler script
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename)
+    classifier.run_all()
+    classifier.write(filename)
+
+    # the resulting 1-hour observation should be:
+    #   counts * integration / live-time
+    expected = spectra * integration / test_data.livetime
+    results = np.genfromtxt(filename, delimiter=',')[1, 1:]
+    np.testing.assert_almost_equal(results, expected[0], decimal=2)
+
+    os.remove(filename)

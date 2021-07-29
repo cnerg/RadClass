@@ -27,7 +27,6 @@ class RadClass:
     filename: The filename for the data to be analyzed.
     TODO: Make node and filename -lists- so that multiple nodes and files
         can be processed by the same object.
-    store_data: boolean; if true, save the results to a CSV file.
     cache_size: (WIP) optional parameter to reduce file I/O and therefore
         increase performance. Indexes a larger selection of rows to analyze.
         If not provided (None), cache_size is ignored (equals integration).
@@ -38,7 +37,7 @@ class RadClass:
     '''
 
     def __init__(self, stride, integration, datapath, filename, analysis=None,
-                 store_data=False, cache_size=None,
+                 cache_size=None,
                  labels={'live': '2x4x16LiveTimes',
                          'timestamps': '2x4x16Times',
                          'spectra': '2x4x16Spectra'}):
@@ -47,7 +46,6 @@ class RadClass:
         self.datapath = datapath
         self.filename = filename
 
-        self.store_data = store_data
         if cache_size is None:
             self.cache_size = self.integration
         else:
@@ -194,8 +192,7 @@ class RadClass:
             if self.analysis is not None:
                 self.analysis.run(data)
 
-            if self.store_data:
-                self.storage = pd.concat([self.storage, pd.DataFrame([data], index=[self.working_time])])
+            self.storage = pd.concat([self.storage, pd.DataFrame([data], index=[self.working_time])])
 
             running = self.march()
 
@@ -211,13 +208,16 @@ class RadClass:
         may be better for debugging and development.
         '''
 
-        if self.store_data:
-            self.storage = pd.DataFrame()
+        self.storage = pd.DataFrame()
 
         self.queue_file()
         # initialize cache
         self.run_cache()
         self.iterate()
 
-        if self.store_data:
-            self.storage.to_csv('results.csv')
+    def write(self, filename):
+        '''
+        Write results to file using Pandas' to_csv() method.
+        filename should include the file extension.
+        '''
+        self.storage.to_csv(filename)
