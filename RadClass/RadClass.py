@@ -37,6 +37,10 @@ class RadClass:
     stop_time: Unix epoch timestamp, in units of seconds. All data in filename
         earlier and up to stop_time will be analyzed. Useful for processing
         only a portion of a data file. Default: None, ignored.
+    NOTE: To convert from string to epoch, try:
+    time.mktime(datetime.datetime.strptime(x, "%m/%d/%Y %H:%M:%S").timetuple())
+    Where "%m/%d/%Y %H:%M:%S" is the string format (see datetime docs).
+    Requires time and datetime modules
     labels: list of dataset name labels in this order:
         [ live_label: live dataset name in HDF5 file,
           timestamps_label: timestamps dataset name in HDF5 file,
