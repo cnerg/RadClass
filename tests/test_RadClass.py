@@ -77,7 +77,7 @@ def test_integration():
 
     # the resulting 1-hour observation should be:
     #   counts * integration / live-time
-    expected = spectra * integration / test_data.livetime
+    expected = spectra / test_data.livetime
     results = np.genfromtxt('results.csv', delimiter=',')[1, 1:]
     np.testing.assert_almost_equal(results, expected[0], decimal=2)
 
@@ -97,7 +97,7 @@ def test_cache():
 
     # the resulting 1-hour observation should be:
     #   counts * integration / live-time
-    expected = spectra * integration / test_data.livetime
+    expected = spectra / test_data.livetime
     results = np.genfromtxt('results.csv', delimiter=',')[1, 1:]
     np.testing.assert_almost_equal(results, expected[0], decimal=2)
 

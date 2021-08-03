@@ -103,7 +103,7 @@ class RadClass:
         # for row in data_matrix:
         #    total += row
         # utilizes numpy architecture to sum data
-        total = np.sum(data_matrix, axis=0)
+        total = np.sum(data_matrix, axis=0) / self.integration
 
         return total
 
