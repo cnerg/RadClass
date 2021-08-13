@@ -89,9 +89,10 @@ class RadClass:
 
         if self.start_time is not None:
             self.working_time = self.processor.timestamps[self.processor.timestamps > self.start_time][0]
+            self.start_i = np.where(self.processor.timestamps == self.working_time)[0][0]
         else:
             self.working_time = self.processor.timestamps[0]
-        self.start_i = 0
+            self.start_i = 0
 
     def collapse_data(self, rows_idx):
         '''

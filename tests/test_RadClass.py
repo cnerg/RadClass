@@ -39,7 +39,8 @@ def test_analysis():
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, analysis=NullAnalysis())
+                          test_data.filename, analysis=NullAnalysis(),
+                          store_data=False)
     classifier.run_all()
 
     np.testing.assert_equal(True, classifier.analysis.changed)
@@ -73,7 +74,7 @@ def test_integration():
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename)
+                          test_data.filename, store_data=False)
     classifier.run_all()
 
     # the resulting 1-hour observation should be:
@@ -90,7 +91,7 @@ def test_cache():
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename,
+                          test_data.filename, store_data=False,
                           cache_size=cache_size)
     classifier.run_all()
 
@@ -140,20 +141,21 @@ def test_write():
 
 
 def test_start():
-    stride = int(test_data.timesteps/10)
-    integration = int(test_data.timesteps/10)
+    num_results = 10
+
+    stride = int(test_data.timesteps/num_results)
+    integration = int(test_data.timesteps/num_results)
     cache_size = 100
     # start one integration period in
     start_time = timestamps[integration]
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=True,
+                          test_data.filename, store_data=False,
                           cache_size=cache_size, start_time=start_time)
     classifier.run_all()
 
-    np.testing.assert_equal(len(classifier.storage),
-                            test_data.timesteps/integration-1)
+    np.testing.assert_equal(len(classifier.storage), num_results-2)
 
 
 def test_stop():
@@ -168,7 +170,7 @@ def test_stop():
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=True,
+                          test_data.filename, store_data=False,
                           cache_size=cache_size, stop_time=stop_time)
     classifier.run_all()
 
