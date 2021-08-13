@@ -14,8 +14,8 @@ timestamps = np.arange(start_date,
                        delta).astype('datetime64[s]').astype('float64')
 
 live = np.full((len(timestamps),), test_data.livetime)
-spectra = np.full((len(timestamps), test_data.energy_bins),
-                  np.full((1, test_data.energy_bins), 10.0))
+spectra = np.arange(test_data.timesteps)
+spectra = np.full((test_data.energy_bins, spectra.shape[0]), spectra).T
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -74,9 +74,9 @@ def test_integration():
 
     # the resulting 1-hour observation should be:
     #   counts * integration / live-time
-    expected = spectra * integration / test_data.livetime
-    results = classifier.storage.to_numpy()[1]
-    np.testing.assert_almost_equal(results, expected[0], decimal=2)
+    expected = np.full((test_data.energy_bins,), integration*(integration-1)/2) / test_data.livetime
+    results = classifier.storage.to_numpy()[0]
+    np.testing.assert_almost_equal(results, expected, decimal=2)
 
 
 def test_cache():
@@ -92,9 +92,9 @@ def test_cache():
 
     # the resulting 1-hour observation should be:
     #   counts * integration / live-time
-    expected = spectra * integration / test_data.livetime
-    results = classifier.storage.to_numpy()[1]
-    np.testing.assert_almost_equal(results, expected[0], decimal=2)
+    expected = np.full((test_data.energy_bins,), integration*(integration-1)/2) / test_data.livetime
+    results = classifier.storage.to_numpy()[0]
+    np.testing.assert_almost_equal(results, expected, decimal=2)
 
 
 def test_stride():
@@ -108,11 +108,11 @@ def test_stride():
 
     # the resulting 1-hour observation should be:
     #   counts * integration / live-time
-    expected = spectra * integration / test_data.livetime
-    expected_samples = int(test_data.timesteps /
-                           (integration + (stride - integration)))
-    np.testing.assert_almost_equal(classifier.storage.iloc[0],
-                                   expected[0],
+    integration_val = ((stride+integration)*(stride+integration-1)/2) - (stride*(stride-1)/2)
+    expected = np.full((test_data.energy_bins,), integration_val) / test_data.livetime
+    expected_samples = int(test_data.timesteps / stride)
+    np.testing.assert_almost_equal(classifier.storage.iloc[1],
+                                   expected,
                                    decimal=2)
     np.testing.assert_equal(len(classifier.storage), expected_samples)
 
@@ -130,8 +130,8 @@ def test_write():
 
     # the resulting 1-hour observation should be:
     #   counts * integration / live-time
-    expected = spectra * integration / test_data.livetime
+    expected = np.full((test_data.energy_bins,), integration*(integration-1)/2) / test_data.livetime
     results = np.genfromtxt(filename, delimiter=',')[1, 1:]
-    np.testing.assert_almost_equal(results, expected[0], decimal=2)
+    np.testing.assert_almost_equal(results, expected, decimal=2)
 
     os.remove(filename)
