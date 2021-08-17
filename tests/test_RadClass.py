@@ -160,13 +160,14 @@ def test_start():
 
 def test_stop():
     # arbitrary but results in less than # of timestamps
-    periods = 5
+    periods = 10
 
-    stride = int(test_data.timesteps/10)
-    integration = int(test_data.timesteps/10)
+    stride = int(test_data.timesteps/periods)
+    integration = int(test_data.timesteps/periods)
     cache_size = 100
-    # stop after n integration periods
-    stop_time = timestamps[integration*periods-1]
+    # stop after n-1 integration periods
+    # so n-1 results expected
+    stop_time = timestamps[integration*(periods-1)+1]
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
@@ -174,4 +175,4 @@ def test_stop():
                           cache_size=cache_size, stop_time=stop_time)
     classifier.run_all()
 
-    np.testing.assert_equal(len(classifier.storage), periods)
+    np.testing.assert_equal(len(classifier.storage), periods-1)

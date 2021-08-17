@@ -30,6 +30,7 @@ class RadClass:
     store_data: boolean; if true, save the results to a CSV file.
     cache_size: Optional parameter to reduce file I/O and therefore
         increase performance. Indexes a larger selection of rows to analyze.
+        cache_size -must- be greater than integration above.
         If not provided (None), cache_size is ignored (equals integration).
     start_time: Unix epoch timestamp, in units of seconds. All data in filename
         at and after this point will be analyzed. Useful for processing only
@@ -77,22 +78,30 @@ class RadClass:
 
         Attributes:
         processor: DataSet object responsible for indexing data from file.
-        working_time: The current working epoch timestamp at which data is
-            being analyzed. Used to keep track of progress within a file.
-        start_i: Data index of value working_time. Used in indexing rows
-            for analysis.
+        start_i: Used in indexing rows for analysis. May be different than
+            the first idx=0 if start_time is specified.
+        stop_i: Last index of timestamps. May be different if stop_time
+            is specified.
         '''
 
         self.processor = ds.DataSet(self.labels)
         self.processor.init_database(self.filename, self.datapath)
         # parameters for keeping track of progress through a file
 
+        self.start_i = 0
+        self.stop_i = len(self.processor.timestamps) - 1
+
         if self.start_time is not None:
-            self.working_time = self.processor.timestamps[self.processor.timestamps > self.start_time][0]
-            self.start_i = np.where(self.processor.timestamps == self.working_time)[0][0]
-        else:
-            self.working_time = self.processor.timestamps[0]
-            self.start_i = 0
+            timestamp = self.processor.timestamps[self.processor.timestamps >=
+                                                  self.start_time][0]
+            self.start_i = np.where(self.processor.timestamps ==
+                                    timestamp)[0][0]
+
+        if self.stop_time is not None:
+            timestamp = self.processor.timestamps[self.processor.timestamps >=
+                                                  self.stop_time][0]
+            self.stop_i = np.where(self.processor.timestamps ==
+                                   timestamp)[0][0]
 
     def collapse_data(self, rows_idx):
         '''
@@ -163,18 +172,11 @@ class RadClass:
         # stop analysis if EOF reached
         # NOTE: stops prematurely, for windows of full integration only
         running = True
-        if ((new_i >= len(self.processor.timestamps)) or
-                ((new_i + self.integration)
-                 >= len(self.processor.timestamps))):
-            running = False
-        # ends analysis if stop_time would be reached this iteration
-        elif (self.stop_time is not None and
-              self.working_time+self.integration > self.stop_time):
+        if (new_i + self.integration) >= self.stop_i:
             running = False
 
         if running:
             # update working integration interval timestep
-            self.working_time = self.processor.timestamps[new_i]
             self.start_i = new_i
 
         return running
@@ -193,17 +195,17 @@ class RadClass:
         Only runs for a set node (datapath) with data already queued.
         '''
         bar = progressbar.ProgressBar(max_value=100, redirect_stdout=True)
-        inverse_dt = 1.0 / (self.processor.timestamps[-1]
-                            - self.processor.timestamps[0])
+        inverse_dt = 1.0 / (self.stop_i - self.start_i)
+        offset = self.start_i
 
         log_interval = 10000  # number of samples analyzed between log updates
         running = True  # tracks whether to end analysis
         while running:
             # print status at set intervals
-            if np.where(self.processor.timestamps == self.working_time)[0][0] % log_interval == 0:
-                bar.update(round((self.working_time - self.processor.timestamps[0]) * inverse_dt, 4)*100)
+            if self.start_i % log_interval == 0:
+                bar.update(round((self.start_i - offset) * inverse_dt, 4)*100)
 
-                readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.working_time))
+                readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.processor.timestamps[self.start_i]))
                 logging.info("--\tCurrently working on timestamps: {}\n".format(readable_time))
 
             # execute analysis and advance in stride
@@ -214,7 +216,7 @@ class RadClass:
             if self.analysis is not None:
                 self.analysis.run(data)
 
-            self.storage = pd.concat([self.storage, pd.DataFrame([data], index=[self.working_time])])
+            self.storage = pd.concat([self.storage, pd.DataFrame([data], index=[self.processor.timestamps[self.start_i]])])
 
             running = self.march()
 
