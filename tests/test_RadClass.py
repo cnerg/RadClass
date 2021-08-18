@@ -148,6 +148,8 @@ def test_write():
     results = np.genfromtxt(filename, delimiter=',')[1, 1:]
     np.testing.assert_almost_equal(results, expected, decimal=2)
 
+    os.remove(filename)
+
 
 def test_start():
     num_results = 10
