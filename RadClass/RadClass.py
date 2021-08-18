@@ -202,7 +202,7 @@ class RadClass:
         running = True  # tracks whether to end analysis
         while running:
             # print status at set intervals
-            if self.start_i % log_interval == 0:
+            if (self.start_i-offset) % log_interval == 0:
                 bar.update(round((self.start_i - offset) * inverse_dt, 4)*100)
 
                 readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.processor.timestamps[self.start_i]))
