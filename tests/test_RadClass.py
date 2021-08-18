@@ -155,6 +155,9 @@ def test_start():
                           cache_size=cache_size, start_time=start_time)
     classifier.run_all()
 
+    integration_val = ((2*integration)*(2*integration-1)/2) - (integration*(integration-1)/2)
+    expected = np.full((test_data.energy_bins,), integration_val) / (integration*test_data.livetime)
+    np.testing.assert_almost_equal(classifier.storage.iloc[0], expected, decimal=2)
     np.testing.assert_equal(len(classifier.storage), num_results-2)
 
 
@@ -175,4 +178,8 @@ def test_stop():
                           cache_size=cache_size, stop_time=stop_time)
     classifier.run_all()
 
+    integration_val = ((integration*(periods-1))*(integration*(periods-1)-1)/2 -
+                       (integration*(periods-2))*(integration*(periods-2)-1)/2)
+    expected = np.full((test_data.energy_bins,), integration_val) / (integration*test_data.livetime)
+    np.testing.assert_almost_equal(classifier.storage.iloc[-1], expected, decimal=2)
     np.testing.assert_equal(len(classifier.storage), periods-1)
