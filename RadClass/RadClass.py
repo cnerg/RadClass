@@ -78,8 +78,8 @@ class RadClass:
 
         Attributes:
         processor: DataSet object responsible for indexing data from file.
-        start_i: Used in indexing rows for analysis. May be different than
-            the first idx=0 if start_time is specified.
+        current_i/start_i: Used in indexing rows for analysis. May be different
+            than the first idx=0 if start_time is specified.
         stop_i: Last index of timestamps. May be different if stop_time
             is specified.
         '''
@@ -96,6 +96,7 @@ class RadClass:
                                                   self.start_time][0]
             self.start_i = np.where(self.processor.timestamps ==
                                     timestamp)[0][0]
+        self.current_i = self.start_i
 
         if self.stop_time is not None:
             timestamp = self.processor.timestamps[self.processor.timestamps >=
@@ -145,11 +146,11 @@ class RadClass:
         #
         # if the final portion of the file is smaller than a full integration
         # interval, only what is left is collected for this analysis
-        end_i = min(self.start_i + self.integration,
+        end_i = min(self.current_i + self.integration,
                     len(self.processor.timestamps) - 1)
 
         # enumerate number of rows to integrate exclusive of the endpoint
-        rows_idx = np.arange(self.start_i, end_i)
+        rows_idx = np.arange(self.current_i, end_i)
 
         # check if all rows are stored in cache by checking for last row
         if end_i not in self.cache_idx:
@@ -167,7 +168,7 @@ class RadClass:
         '''
 
         # increment the working interval starting index and advance stride
-        new_i = self.start_i + self.stride
+        new_i = self.current_i + self.stride
 
         # stop analysis if EOF reached
         # NOTE: stops prematurely, for windows of full integration only
@@ -177,15 +178,15 @@ class RadClass:
 
         if running:
             # update working integration interval timestep
-            self.start_i = new_i
+            self.current_i = new_i
 
         return running
 
     def run_cache(self):
-        end_i = min(self.start_i + self.cache_size,
+        end_i = min(self.current_i + self.cache_size,
                     len(self.processor.timestamps) - 1)
         # enumerate number of rows to integrate exclusive of the endpoint
-        self.cache_idx = np.arange(self.start_i, end_i)
+        self.cache_idx = np.arange(self.current_i, end_i)
         self.cache = self.processor.data_slice(self.datapath, self.cache_idx)
 
     def iterate(self):
@@ -195,17 +196,16 @@ class RadClass:
         Only runs for a set node (datapath) with data already queued.
         '''
         bar = progressbar.ProgressBar(max_value=100, redirect_stdout=True)
-        inverse_dt = 1.0 / (self.stop_i - self.start_i)
-        offset = self.start_i
+        inverse_dt = 1.0 / (self.stop_i - self.current_i)
 
         log_interval = 10000  # number of samples analyzed between log updates
         running = True  # tracks whether to end analysis
         while running:
             # print status at set intervals
-            if (self.start_i-offset) % log_interval == 0:
-                bar.update(round((self.start_i - offset) * inverse_dt, 4)*100)
+            if (self.current_i-self.start_i) % log_interval == 0:
+                bar.update(round((self.current_i - self.start_i) * inverse_dt, 4)*100)
 
-                readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.processor.timestamps[self.start_i]))
+                readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.processor.timestamps[self.current_i]))
                 logging.info("--\tCurrently working on timestamps: {}\n".format(readable_time))
 
             # execute analysis and advance in stride
@@ -216,7 +216,7 @@ class RadClass:
             if self.analysis is not None:
                 self.analysis.run(data)
 
-            self.storage = pd.concat([self.storage, pd.DataFrame([data], index=[self.processor.timestamps[self.start_i]])])
+            self.storage = pd.concat([self.storage, pd.DataFrame([data], index=[self.processor.timestamps[self.current_i]])])
 
             running = self.march()
 
