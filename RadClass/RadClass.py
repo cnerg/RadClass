@@ -96,6 +96,8 @@ class RadClass:
                                                   self.start_time][0]
             self.start_i = np.where(self.processor.timestamps ==
                                     timestamp)[0][0]
+        else:
+            self.start_time = self.processor.timestamps[0]
         self.current_i = self.start_i
 
         if self.stop_time is not None:
@@ -103,6 +105,8 @@ class RadClass:
                                                   self.stop_time][0]
             self.stop_i = np.where(self.processor.timestamps ==
                                    timestamp)[0][0]
+        else:
+            self.stop_time = self.processor.timestamps[-1]
 
     def collapse_data(self, rows_idx):
         '''
@@ -196,16 +200,17 @@ class RadClass:
         Only runs for a set node (datapath) with data already queued.
         '''
         bar = progressbar.ProgressBar(max_value=100, redirect_stdout=True)
-        inverse_dt = 1.0 / (self.stop_i - self.current_i)
+        inverse_dt = 1.0 / (self.stop_time - self.start_time)
 
         log_interval = 10000  # number of samples analyzed between log updates
         running = True  # tracks whether to end analysis
         while running:
             # print status at set intervals
-            if (self.current_i-self.start_i) % log_interval == 0:
-                bar.update(round((self.current_i - self.start_i) * inverse_dt, 4)*100)
+            current_time = self.processor.timestamps[self.current_i]
+            if (current_time - self.start_time) % log_interval == 0:
+                bar.update(round((current_time - self.start_time) * inverse_dt, 4)*100)
 
-                readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.processor.timestamps[self.current_i]))
+                readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(current_time))
                 logging.info("--\tCurrently working on timestamps: {}\n".format(readable_time))
 
             # execute analysis and advance in stride
