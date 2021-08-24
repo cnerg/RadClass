@@ -220,7 +220,7 @@ class RadClass:
             if self.analysis is not None:
                 self.analysis.run(data)
 
-            self.storage = pd.concat([self.storage, pd.DataFrame([data], index=[self.processor.timestamps[self.current_i]])])
+            self.storage[self.working_time] = data
 
             running = self.march()
 
@@ -236,7 +236,7 @@ class RadClass:
         may be better for debugging and development.
         '''
 
-        self.storage = pd.DataFrame()
+        self.storage = dict()
 
         self.queue_file()
         # initialize cache
@@ -248,4 +248,7 @@ class RadClass:
         Write results to file using Pandas' to_csv() method.
         filename should include the file extension.
         '''
+        self.storage = pd.DataFrame.from_dict(self.storage,
+                                              orient='index',
+                                              columns=np.arange(len(self.cache[0])))
         self.storage.to_csv(filename)
