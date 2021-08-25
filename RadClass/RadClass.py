@@ -206,7 +206,7 @@ class RadClass:
         while running:
             # print status at set intervals
             if (self.current_i - self.start_i) % log_interval == 0:
-                bar.update(round((self.current_i - self.start_i) * inverse_dt, 4)*100)
+                bar.update(round((self.current_i - self.start_i) * inverse_dt * 100, 4))
 
                 current_time = self.processor.timestamps[self.current_i]
                 readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(current_time))
@@ -220,7 +220,7 @@ class RadClass:
             if self.analysis is not None:
                 self.analysis.run(data)
 
-            self.storage[self.working_time] = data
+            self.storage[self.processor.timestamps[self.current_i]] = data
 
             running = self.march()
 
