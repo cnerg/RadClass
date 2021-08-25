@@ -243,12 +243,13 @@ class RadClass:
         self.run_cache()
         self.iterate()
 
+        self.storage = pd.DataFrame.from_dict(self.storage,
+                                              orient='index',
+                                              columns=np.arange(len(self.cache[0])))
+
     def write(self, filename):
         '''
         Write results to file using Pandas' to_csv() method.
         filename should include the file extension.
         '''
-        self.storage = pd.DataFrame.from_dict(self.storage,
-                                              orient='index',
-                                              columns=np.arange(len(self.cache[0])))
         self.storage.to_csv(filename)
