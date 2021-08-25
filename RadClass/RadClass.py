@@ -27,9 +27,21 @@ class RadClass:
     filename: The filename for the data to be analyzed.
     TODO: Make node and filename -lists- so that multiple nodes and files
         can be processed by the same object.
-    cache_size: (WIP) optional parameter to reduce file I/O and therefore
+    store_data: boolean; if true, save the results to a CSV file.
+    cache_size: Optional parameter to reduce file I/O and therefore
         increase performance. Indexes a larger selection of rows to analyze.
+        cache_size -must- be greater than integration above.
         If not provided (None), cache_size is ignored (equals integration).
+    start_time: Unix epoch timestamp, in units of seconds. All data in filename
+        at and after this point will be analyzed. Useful for processing only
+        a portion of a data file. Default: None, ignored.
+    stop_time: Unix epoch timestamp, in units of seconds. All data in filename
+        earlier and up to stop_time will be analyzed. Useful for processing
+        only a portion of a data file. Default: None, ignored.
+    NOTE: To convert from string to epoch, try:
+    time.mktime(datetime.datetime.strptime(x, "%m/%d/%Y %H:%M:%S").timetuple())
+    Where "%m/%d/%Y %H:%M:%S" is the string format (see datetime docs).
+    Requires time and datetime modules
     labels: list of dataset name labels in this order:
         [ live_label: live dataset name in HDF5 file,
           timestamps_label: timestamps dataset name in HDF5 file,
@@ -37,7 +49,8 @@ class RadClass:
     '''
 
     def __init__(self, stride, integration, datapath, filename, analysis=None,
-                 cache_size=None,
+                 store_data=False, cache_size=None, start_time=None,
+                 stop_time=None,
                  labels={'live': '2x4x16LiveTimes',
                          'timestamps': '2x4x16Times',
                          'spectra': '2x4x16Spectra'}):
@@ -51,6 +64,8 @@ class RadClass:
         else:
             self.cache_size = cache_size
 
+        self.start_time = start_time
+        self.stop_time = stop_time
         self.labels = labels
 
         # analysis object that will manipulate data
@@ -63,18 +78,33 @@ class RadClass:
 
         Attributes:
         processor: DataSet object responsible for indexing data from file.
-        working_time: The current working epoch timestamp at which data is
-            being analyzed. Used to keep track of progress within a file.
-        start_i: Data index of value working_time. Used in indexing rows
-            for analysis.
+        current_i/start_i: Used in indexing rows for analysis. May be different
+            than the first idx=0 if start_time is specified.
+        stop_i: Last index of timestamps. May be different if stop_time
+            is specified.
         '''
 
         self.processor = ds.DataSet(self.labels)
         self.processor.init_database(self.filename, self.datapath)
         # parameters for keeping track of progress through a file
 
-        self.working_time = self.processor.timestamps[0]
         self.start_i = 0
+        self.stop_i = len(self.processor.timestamps) - 1
+
+        if self.start_time is not None:
+            timestamp = self.processor.timestamps[self.processor.timestamps >=
+                                                  self.start_time][0]
+            self.start_i = np.where(self.processor.timestamps ==
+                                    timestamp)[0][0]
+        self.start_time = self.processor.timestamps[self.start_i]
+        self.current_i = self.start_i
+
+        if self.stop_time is not None:
+            timestamp = self.processor.timestamps[self.processor.timestamps >=
+                                                  self.stop_time][0]
+            self.stop_i = np.where(self.processor.timestamps ==
+                                   timestamp)[0][0]
+        self.stop_time = self.processor.timestamps[self.stop_i]
 
     def collapse_data(self, rows_idx):
         '''
@@ -118,11 +148,11 @@ class RadClass:
         #
         # if the final portion of the file is smaller than a full integration
         # interval, only what is left is collected for this analysis
-        end_i = min(self.start_i + self.integration,
+        end_i = min(self.current_i + self.integration,
                     len(self.processor.timestamps) - 1)
 
         # enumerate number of rows to integrate exclusive of the endpoint
-        rows_idx = np.arange(self.start_i, end_i)
+        rows_idx = np.arange(self.current_i, end_i)
 
         # check if all rows are stored in cache by checking for last row
         if end_i not in self.cache_idx:
@@ -140,28 +170,25 @@ class RadClass:
         '''
 
         # increment the working interval starting index and advance stride
-        new_i = self.start_i + self.stride
+        new_i = self.current_i + self.stride
 
         # stop analysis if EOF reached
         # NOTE: stops prematurely, for windows of full integration only
         running = True
-        if ((new_i >= len(self.processor.timestamps)) or
-                ((new_i + self.integration)
-                 >= len(self.processor.timestamps))):
+        if (new_i + self.integration) >= self.stop_i:
             running = False
 
         if running:
             # update working integration interval timestep
-            self.working_time = self.processor.timestamps[new_i]
-            self.start_i = new_i
+            self.current_i = new_i
 
         return running
 
     def run_cache(self):
-        end_i = min(self.start_i + self.cache_size,
+        end_i = min(self.current_i + self.cache_size,
                     len(self.processor.timestamps) - 1)
         # enumerate number of rows to integrate exclusive of the endpoint
-        self.cache_idx = np.arange(self.start_i, end_i)
+        self.cache_idx = np.arange(self.current_i, end_i)
         self.cache = self.processor.data_slice(self.datapath, self.cache_idx)
 
     def iterate(self):
@@ -171,17 +198,18 @@ class RadClass:
         Only runs for a set node (datapath) with data already queued.
         '''
         bar = progressbar.ProgressBar(max_value=100, redirect_stdout=True)
-        inverse_dt = 1.0 / (self.processor.timestamps[-1]
-                            - self.processor.timestamps[0])
+        inverse_dt = 1.0 / (self.stop_i - self.start_i)
 
-        log_interval = 10000  # number of samples analyzed between log updates
+        # number of samples analyzed between log updates
+        log_interval = max(min((self.stop_i - self.start_i)/100, 10000), 10) 
         running = True  # tracks whether to end analysis
         while running:
             # print status at set intervals
-            if np.where(self.processor.timestamps == self.working_time)[0][0] % log_interval == 0:
-                bar.update(round((self.working_time - self.processor.timestamps[0]) * inverse_dt, 4)*100)
+            if (self.current_i - self.start_i) % log_interval == 0:
+                bar.update(round((self.current_i - self.start_i) * inverse_dt, 4)*100)
 
-                readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(self.working_time))
+                current_time = self.processor.timestamps[self.current_i]
+                readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(current_time))
                 logging.info("--\tCurrently working on timestamps: {}\n".format(readable_time))
 
             # execute analysis and advance in stride
@@ -192,7 +220,7 @@ class RadClass:
             if self.analysis is not None:
                 self.analysis.run(data)
 
-            self.storage = pd.concat([self.storage, pd.DataFrame([data], index=[self.working_time])])
+            self.storage = pd.concat([self.storage, pd.DataFrame([data], index=[self.processor.timestamps[self.current_i]])])
 
             running = self.march()
 
