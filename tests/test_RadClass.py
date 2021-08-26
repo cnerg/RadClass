@@ -107,8 +107,8 @@ def test_cache():
 
 
 def test_stride():
-    stride = 100
-    integration = 50
+    stride = 10
+    integration = 5
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,

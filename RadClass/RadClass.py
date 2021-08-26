@@ -218,7 +218,8 @@ class RadClass:
 
             # pass data to analysis object if available
             if self.analysis is not None:
-                self.analysis.run(data, self.working_time)
+                self.analysis.run(data,
+                                  self.processor.timestamps[self.current_i])
 
             self.storage[self.processor.timestamps[self.current_i]] = data
 
