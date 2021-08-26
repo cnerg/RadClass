@@ -206,7 +206,7 @@ class RadClass:
         while running:
             # print status at set intervals
             if (self.current_i - self.start_i) % log_interval == 0:
-                bar.update(round((self.current_i - self.start_i) * inverse_dt, 4)*100)
+                bar.update(round((self.current_i - self.start_i) * inverse_dt * 100, 4))
 
                 current_time = self.processor.timestamps[self.current_i]
                 readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(current_time))
@@ -220,7 +220,7 @@ class RadClass:
             if self.analysis is not None:
                 self.analysis.run(data)
 
-            self.storage = pd.concat([self.storage, pd.DataFrame([data], index=[self.processor.timestamps[self.current_i]])])
+            self.storage[self.processor.timestamps[self.current_i]] = data
 
             running = self.march()
 
@@ -236,12 +236,16 @@ class RadClass:
         may be better for debugging and development.
         '''
 
-        self.storage = pd.DataFrame()
+        self.storage = dict()
 
         self.queue_file()
         # initialize cache
         self.run_cache()
         self.iterate()
+
+        self.storage = pd.DataFrame.from_dict(self.storage,
+                                              orient='index',
+                                              columns=np.arange(len(self.cache[0])))
 
     def write(self, filename):
         '''
