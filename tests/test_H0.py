@@ -15,8 +15,9 @@ timestamps = np.arange(start_date,
                        delta).astype('datetime64[s]').astype('float64')
 
 live = np.full((len(timestamps),), test_data.livetime)
+sample_val = 10.0
 spectra = np.full((len(timestamps), test_data.energy_bins),
-                  np.full((1, test_data.energy_bins), 10.0))
+                  np.full((1, test_data.energy_bins), sample_val))
 # setting up for rejected null hypothesis
 spectra[int(test_data.timesteps/2):] = 1000.0
 
@@ -51,6 +52,9 @@ def test_gross():
                           test_data.filename, analysis=analysis)
     classifier.run_all()
 
+    np.testing.assert_equal(analysis.triggers[0][0],
+                            timestamps[-int(test_data.timesteps/2)])
+    # there should only be one rejected hypothesis
     np.testing.assert_equal(analysis.triggers.shape[0], 1)
 
 
@@ -64,9 +68,14 @@ def test_channel():
                           test_data.filename, analysis=analysis)
     classifier.run_all()
 
-    np.testing.assert_equal(analysis.triggers.shape,
-                            (1, test_data.energy_bins+1))
+    print(analysis.triggers.shape)
+
+    np.testing.assert_equal(analysis.triggers[0][0],
+                            timestamps[-int(test_data.timesteps/2)])
+    # there should only be one rejected hypothesis
     np.testing.assert_equal(analysis.triggers.shape[0], 1)
+    # columns = 1 for timestamp + energy_bins
+    np.testing.assert_equal(analysis.triggers.shape[1], test_data.energy_bins+1)
 
 
 def test_write():
