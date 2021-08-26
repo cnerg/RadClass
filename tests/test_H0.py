@@ -68,8 +68,6 @@ def test_channel():
                           test_data.filename, analysis=analysis)
     classifier.run_all()
 
-    print(analysis.triggers.shape)
-
     np.testing.assert_equal(analysis.triggers[0][0],
                             timestamps[-int(test_data.timesteps/2)])
     # there should only be one rejected hypothesis
