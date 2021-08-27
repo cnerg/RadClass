@@ -45,55 +45,61 @@ class H0:
             # all p-vals for rejected hypothesis are saved in this sparse array
             self.triggers = np.empty((0, energy_bins+1))
 
+    def run_gross(self, data, timestamp):
+        data = np.sum(data)
+
+        # only needed for the first initialization
+        if self.x1 is None:
+            self.x1 = data
+        else:
+            self.x2 = data
+            n = self.x1 + self.x2
+            p = 0.5
+            pval = stats.binom_test(self.x2, n, p, alternative='two-sided')
+
+            # only save instances with rejected null hypothesesf
+            if pval <= self.significance:
+                self.triggers = np.append(self.triggers,
+                                            [[timestamp, pval,
+                                            self.x1, self.x2]],
+                                            axis=0)
+
+            # saving data for the next integration step
+            self.x1 = self.x2
+    
+    def run_channels(self, data, timestamp):
+        # only needed for the first initialization
+        if self.x1 is None:
+            self.x1 = data
+        else:
+            self.x2 = data
+            rejections = np.zeros_like(data)
+            nvec = self.x1 + self.x2
+            p = 0.5
+            for i, (x1, n) in enumerate(zip(self.x1, nvec)):
+                pval = stats.binom_test(x1, n, p,
+                                            alternative='two-sided')
+                if pval <= self.significance:
+                    rejections[i] = pval
+            if np.nonzero(rejections)[0].size != 0:
+                self.triggers = np.append(self.triggers,
+                                        [np.insert(rejections,
+                                                    0, timestamp)],
+                                        axis=0)
+
+            # saving data for the next integration step
+            self.x1 = self.x2
+
+    run_method = { True: run_gross, False: run_channels }
+
     def run(self, data, timestamp):
         '''
         Method required by RadClass. Called at each integration step.
         Completes hypothesis testing for passed data and stores results.
+        Wrapper method that chooses run_gross or run_channel based on user
+        input variable: gross.
         '''
-
-        if self.gross:
-            data = np.sum(data)
-
-            # only needed for the first initialization
-            if self.x1 is None:
-                self.x1 = data
-            else:
-                self.x2 = data
-                n = self.x1 + self.x2
-                p = 0.5
-                pval = stats.binom_test(self.x2, n, p, alternative='two-sided')
-
-                # only save instances with rejected null hypothesesf
-                if pval <= self.significance:
-                    self.triggers = np.append(self.triggers,
-                                              [[timestamp, pval,
-                                                self.x1, self.x2]],
-                                              axis=0)
-
-                # saving data for the next integration step
-                self.x1 = self.x2
-        else:
-            # only needed for the first initialization
-            if self.x1 is None:
-                self.x1 = data
-            else:
-                self.x2 = data
-                rejections = np.zeros_like(data)
-                nvec = self.x1 + self.x2
-                p = 0.5
-                for i, (x1, n) in enumerate(zip(self.x1, nvec)):
-                    pval = stats.binom_test(x1, n, p,
-                                                alternative='two-sided')
-                    if pval <= self.significance:
-                        rejections[i] = pval
-                if np.nonzero(rejections)[0].size != 0:
-                    self.triggers = np.append(self.triggers,
-                                              [np.insert(rejections,
-                                                         0, timestamp)],
-                                              axis=0)
-
-                # saving data for the next integration step
-                self.x1 = self.x2
+        self.run_method[self.gross](self, data, timestamp)
 
     def write(self, filename):
         '''
