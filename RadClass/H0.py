@@ -78,15 +78,14 @@ class H0:
                 self.x1 = data
             else:
                 self.x2 = data
-                pvals = np.empty_like(data)
                 rejections = np.zeros_like(data)
                 nvec = self.x1 + self.x2
                 p = 0.5
                 for i, (x1, n) in enumerate(zip(self.x1, nvec)):
-                    pvals[i] = stats.binom_test(x1, n, p,
+                    pval = stats.binom_test(x1, n, p,
                                                 alternative='two-sided')
-                    if pvals[i] <= self.significance:
-                        rejections[i] = pvals[i]
+                    if pval <= self.significance:
+                        rejections[i] = pval
                 if np.nonzero(rejections)[0].size != 0:
                     self.triggers = np.append(self.triggers,
                                               [np.insert(rejections,
