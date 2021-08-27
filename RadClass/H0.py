@@ -80,10 +80,10 @@ class H0:
                 self.x2 = data
                 pvals = np.empty_like(data)
                 rejections = np.zeros_like(data)
-                for i in range(len(self.x2)):
-                    n = self.x1[i] + self.x2[i]
-                    p = 0.5
-                    pvals[i] = stats.binom_test(self.x1[i], n, p,
+                nvec = self.x1 + self.x2
+                p = 0.5
+                for i, (x1, n) in enumerate(zip(self.x1, nvec)):
+                    pvals[i] = stats.binom_test(x1, n, p,
                                                 alternative='two-sided')
                     if pvals[i] <= self.significance:
                         rejections[i] = pvals[i]
