@@ -73,7 +73,7 @@ class H0:
             self.x1 = data
         else:
             self.x2 = data
-            rejections = np.zeros_like(data)
+            rejections = np.ones_like(data)
             nvec = self.x1 + self.x2
             p = 0.5
             for i, (x1, n) in enumerate(zip(self.x1, nvec)):
@@ -81,7 +81,8 @@ class H0:
                                             alternative='two-sided')
                 if pval <= self.significance:
                     rejections[i] = pval
-            if np.nonzero(rejections)[0].size != 0:
+            #if np.nonzero(rejections)[0].size != 0:
+            if np.sum(rejections) != len(rejections):
                 self.triggers = np.append(self.triggers,
                                         [np.insert(rejections,
                                                     0, timestamp)],
