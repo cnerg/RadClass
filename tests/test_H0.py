@@ -15,11 +15,11 @@ timestamps = np.arange(start_date,
                        delta).astype('datetime64[s]').astype('float64')
 
 live = np.full((len(timestamps),), test_data.livetime)
-sample_val = 10.0
+sample_val = 1.0
 spectra = np.full((len(timestamps), test_data.energy_bins),
                   np.full((1, test_data.energy_bins), sample_val))
 # setting up for rejected null hypothesis
-spectra[int(test_data.timesteps/2):] = 1000.0
+spectra[int(test_data.timesteps/2):] = 100.0
 
 
 @pytest.fixture(scope="module", autouse=True)
