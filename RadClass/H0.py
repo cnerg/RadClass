@@ -55,7 +55,7 @@ class H0:
             self.x2 = data
             n = self.x1 + self.x2
             p = 0.5
-            pval = stats.binom_test(self.x2, n, p, alternative='two-sided')
+            pval = stats.binom_test(self.x1, n, p, alternative='two-sided')
 
             # only save instances with rejected null hypothesesf
             if pval <= self.significance:
@@ -91,8 +91,6 @@ class H0:
             # saving data for the next integration step
             self.x1 = self.x2
 
-    run_method = { True: run_gross, False: run_channels }
-
     def run(self, data, timestamp):
         '''
         Method required by RadClass. Called at each integration step.
@@ -100,7 +98,8 @@ class H0:
         Wrapper method that chooses run_gross or run_channel based on user
         input variable: gross.
         '''
-        self.run_method[self.gross](self, data, timestamp)
+        run_method = { True: self.run_gross, False: self.run_channels }
+        run_method[self.gross](data, timestamp)
 
     def write(self, filename):
         '''
@@ -110,11 +109,11 @@ class H0:
 
         results = pd.DataFrame()
         results['timestamps'] = self.triggers[:, 0]
-        if len(self.triggers[0]) == 4:
+        if self.gross:
             results['pval'] = self.triggers[:, 1]
             results['x1'] = self.triggers[:, 2]
             results['x2'] = self.triggers[:, 3]
-        else:
+        elif not self.gross:
             for i in range(len(self.triggers[0, 1:])):
                 results[str(i)] = self.triggers[:, i]
 
