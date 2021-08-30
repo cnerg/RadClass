@@ -19,7 +19,7 @@ sample_val = 1.0
 spectra = np.full((len(timestamps), test_data.energy_bins),
                   np.full((1, test_data.energy_bins), sample_val))
 # setting up for rejected null hypothesis
-spectra[int(test_data.timesteps/2):] = 100.0
+spectra[test_data.timesteps//2:] = 100.0
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -53,7 +53,7 @@ def test_gross():
     classifier.run_all()
 
     np.testing.assert_equal(analysis.triggers[0][0],
-                            timestamps[-int(test_data.timesteps/2)])
+                            timestamps[-test_data.timesteps//2])
     # there should only be one rejected hypothesis
     np.testing.assert_equal(analysis.triggers.shape[0], 1)
 
