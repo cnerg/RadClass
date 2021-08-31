@@ -19,7 +19,8 @@ sample_val = 1.0
 spectra = np.full((len(timestamps), test_data.energy_bins),
                   np.full((1, test_data.energy_bins), sample_val))
 # setting up for rejected null hypothesis
-spectra[test_data.timesteps//2:] = 100.0
+rejected_H0_time = test_data.timesteps//2
+spectra[rejected_H0_time:] = 100.0
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -53,7 +54,7 @@ def test_gross():
     classifier.run_all()
 
     np.testing.assert_equal(analysis.triggers[0][0],
-                            timestamps[-test_data.timesteps//2])
+                            timestamps[-rejected_H0_time])
     # there should only be one rejected hypothesis
     np.testing.assert_equal(analysis.triggers.shape[0], 1)
 
@@ -69,7 +70,7 @@ def test_channel():
     classifier.run_all()
 
     np.testing.assert_equal(analysis.triggers[0][0],
-                            timestamps[-int(test_data.timesteps/2)])
+                            timestamps[-rejected_H0_time])
     # there should only be one rejected hypothesis
     np.testing.assert_equal(analysis.triggers.shape[0], 1)
     # columns = 1 for timestamp + energy_bins
