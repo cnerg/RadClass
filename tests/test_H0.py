@@ -54,7 +54,7 @@ def test_gross():
     classifier.run_all()
 
     np.testing.assert_equal(analysis.triggers[0][0],
-                            timestamps[-rejected_H0_time])
+                            timestamps[-(rejected_H0_time+integration)])
     # there should only be one rejected hypothesis
     np.testing.assert_equal(analysis.triggers.shape[0], 1)
 
@@ -70,7 +70,7 @@ def test_channel():
     classifier.run_all()
 
     np.testing.assert_equal(analysis.triggers[0][0],
-                            timestamps[-rejected_H0_time])
+                            timestamps[-(rejected_H0_time+integration)])
     # there should only be one rejected hypothesis
     np.testing.assert_equal(analysis.triggers.shape[0], 1)
     # columns = 1 for timestamp + energy_bins
