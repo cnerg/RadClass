@@ -6,14 +6,70 @@
 
 A collection of tools (including data analysis and machine learning applications) that can be used to explore radiation data (temporal and spectral) for external identification of radiation signatures.
 
-## Dependencies
+## Table of Contents
+
+1. [Installation](#Installation)
+
+2. [Usage](#Usage)
+
+## Installation
+
+### Dependencies
 
 * Python 3
 
-Including the following Python packages (found in `requirements.txt`):
+Versions 3.6-3.9 are currently supported by tests. The following Python packages are required to run (found in `requirements.txt`):
 
 * h5py
 * numpy
 * pandas
 * progressbar2
 * scipy
+
+Scripts can be run from the top-level directory:
+
+`python /path/to/RadClass/script`
+
+Or `RadClass` can be installed using pip:
+
+`python -m pip install /path/to/RadClass/. --user`
+
+## Usage
+
+RadClass is designed to be modular, allowing a user to use analysis modules as needed:
+
+<p align="center">
+  <img width="300" src="https://drive.google.com/uc?export=view&id=14RZCOaTmcwKaEjiWHaQeARaxCpx3zAur">
+</p>
+
+An HDF5 data file is specified as input, which is processed by `DataSet`. The user can specify a type of `AnalysisParameters`. For example, `H0` for hypothesis testing, `BackgroundEstimator` for background estimation, etc.
+`RadClass` then uses `DataSet` and the user specified `AnalysisParameters` to run, storing the results for use by the user.
+To see examples of how a user can initialize and run `RadClass`, review /tests/.
+
+`RadClass` expects a data structure as follows:
+
+<p align="center">
+  <img width="300" src="https://drive.google.com/uc?export=view&id=1RQM7Ipy1h4zOBaZlpsVTmIpt_mymwFea">
+</p>
+
+The HDF5 file must have three groups:
+
+1. A vector of epoch timestamps at which the measurement was taken.
+2. If applicable, the live recording time of the detector to correct for dead time. If not applicable, a vector of 1's.
+3. A data matrix of `n` measurements given for `m` bins.
+
+Each groups name must be specified as an input dictionary: `labels`. Integration occurs over the course of the data matrix.
+
+<p align="center">
+  <img width="300" src="https://drive.google.com/uc?export=view&id=1mWrsb00dr0gBYiuBcNtaC2qkzbt5FXpF">
+</p>
+
+Data rows are corrected for dead time and summed for the specified integration input length (then averaged over the integration period).
+If stride is specified, the working timestamp will advance forward by the specified amount. While a required input, setting `stride = integration` will ignore this behavior.
+A `cache_size` can be given, which will pre-slice a specified number of rows into `RadClass` to reduce file I/O. Otherwise, each set of integration rows will be sliced separately.
+A `start_time` and `stop_time` can also be specified for periods of data processing smaller than the total length of the input file. These two variables must be epoch timestamps in
+units of seconds, which can generally be given using the `time` and `datetime` Python modules:
+
+`time.mktime(datetime.datetime.strptime(x, "%m/%d/%Y %H:%M:%S").timetuple())`
+
+Where `x` is a date string. See [module](https://docs.python.org/3/library/time.html) [docs](https://docs.python.org/3/library/datetime.html) for more details.
