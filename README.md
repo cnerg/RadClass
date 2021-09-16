@@ -39,7 +39,7 @@ Or `RadClass` can be installed using pip:
 RadClass is designed to be modular, allowing a user to use analysis modules as needed:
 
 <p align="center">
-  <img src="https://drive.google.com/uc?export=view&id=14RZCOaTmcwKaEjiWHaQeARaxCpx3zAur">
+  <img width="600" src="https://drive.google.com/uc?export=view&id=14RZCOaTmcwKaEjiWHaQeARaxCpx3zAur">
 </p>
 
 An HDF5 data file is specified as input, which is processed by `DataSet`. The user can specify a type of `AnalysisParameters`. For example, `H0` for hypothesis testing, `BackgroundEstimator` for background estimation, etc.
@@ -49,7 +49,7 @@ To see examples of how a user can initialize and run `RadClass`, review /tests/.
 `RadClass` expects a data structure as follows:
 
 <p align="center">
-  <img src="https://drive.google.com/uc?export=view&id=1RQM7Ipy1h4zOBaZlpsVTmIpt_mymwFea">
+  <img width="600" src="https://drive.google.com/uc?export=view&id=1RQM7Ipy1h4zOBaZlpsVTmIpt_mymwFea">
 </p>
 
 The HDF5 file must have three groups:
@@ -61,7 +61,7 @@ The HDF5 file must have three groups:
 Each groups name must be specified as an input dictionary: `labels`. Integration occurs over the course of the data matrix.
 
 <p align="center">
-  <img src="https://drive.google.com/uc?export=view&id=1mWrsb00dr0gBYiuBcNtaC2qkzbt5FXpF">
+  <img width="600" src="https://drive.google.com/uc?export=view&id=1mWrsb00dr0gBYiuBcNtaC2qkzbt5FXpF">
 </p>
 
 Data rows are corrected for dead time and summed for the specified integration input length (then averaged over the integration period).
