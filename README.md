@@ -58,7 +58,7 @@ The HDF5 file must have three groups:
 2. If applicable, the live recording time of the detector to correct for dead time. If not applicable, a vector of 1's.
 3. A data matrix of `n` measurements given for `m` bins.
 
-Each groups name must be specified as an input dictionary: `labels`.
+Each group's name must be specified in an input dictionary: `labels`.
 
 Integration occurs over the course of the data matrix.
 
