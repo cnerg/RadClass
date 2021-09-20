@@ -16,8 +16,6 @@ class BackgroundEstimator:
     confidence: Percentage of samples to disregard. 1-confidence number of
         samples are saved. For example, if confidence=0.95, the lowest 5% of
         count rates/timestamps are saved.
-    ofilename: Output filename excluding extension. File is stored as a csv.
-        Default is bckg_results.
     store_all: Boolean. Indicates whether to store spectral information.
     spectra: Optional NumPy array that stores spectral data from energy bins.
     energy_bins: The number of energy bins defined by the data under analysis.
@@ -26,10 +24,9 @@ class BackgroundEstimator:
     background = pd.DataFrame(columns=['timestamp', 'count_rate'])
     data = np.empty((0, 2))
 
-    def __init__(self, confidence=0.95, ofilename='bckg_results',
+    def __init__(self, confidence=0.95,
                  store_all=False, energy_bins=1000):
         self.confidence = confidence
-        self.ofilename = ofilename
         self.energy_bins = energy_bins
 
         self.store_all = store_all
@@ -37,15 +34,13 @@ class BackgroundEstimator:
             self.store_all = store_all
             self.spectra = np.empty((0, energy_bins))
 
+    '''
     def __del__(self):
-        '''
-        Saves results upon completion of script, even if the script crashes.
-        '''
-
         self.background = pd.DataFrame(columns=['timestamp', 'count_rate'])
         self.estimate()
         # this method could be compressed to save memory
         self.background.to_csv(self.ofilename+'.csv', index=False)
+    '''
 
     def save_all(self):
         '''
@@ -118,13 +113,14 @@ class BackgroundEstimator:
         # if len(self.data) % 10000:
         #    self.estimate()
 
-    def write(self):
+    def write(self, ofilename='bckg_results'):
         '''
         Identical to destructor but can be manually called.
         NOTE: Only write or __del__ should be kept, but there is a design
             question of which is the appropriate method to write to file.
         '''
 
-        self.estimate()
+        # user must call estimate, or it could be part of write()
+        # self.estimate()
         # this method could be compressed to save memory
-        self.background.to_csv(self.ofilename+'.csv', index=False)
+        self.background.to_csv(ofilename+'.csv', index=False)
