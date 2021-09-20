@@ -8,9 +8,11 @@ A collection of tools (including data analysis and machine learning applications
 
 ## Table of Contents
 
-1. [Installation](#Installation)
+1. [Installation](#installation)
 
-2. [Usage](#Usage)
+2. [Usage](#usage)
+
+3. [Data Format](#data-format)
 
 ## Installation
 
@@ -38,19 +40,17 @@ Or `RadClass` can be installed using pip:
 
 RadClass is designed to be modular, allowing a user to use analysis modules as needed:
 
-<p align="center">
-  <img width="600" src="https://drive.google.com/uc?export=view&id=14RZCOaTmcwKaEjiWHaQeARaxCpx3zAur">
-</p>
+![RadClass Workflow](/images/RadClass_workflow.png)
 
 An HDF5 data file is specified as input, which is processed by `DataSet`. The user can specify a type of `AnalysisParameters`. For example, `H0` for hypothesis testing, `BackgroundEstimator` for background estimation, etc.
 `RadClass` then uses `DataSet` and the user specified `AnalysisParameters` to run, storing the results for use by the user.
 To see examples of how a user can initialize and run `RadClass`, review /tests/.
 
+## Data Format
+
 `RadClass` expects a data structure as follows:
 
-<p align="center">
-  <img width="600" src="https://drive.google.com/uc?export=view&id=1RQM7Ipy1h4zOBaZlpsVTmIpt_mymwFea">
-</p>
+![File Structure](/images/file_structure.png)
 
 The HDF5 file must have three groups:
 
@@ -58,11 +58,11 @@ The HDF5 file must have three groups:
 2. If applicable, the live recording time of the detector to correct for dead time. If not applicable, a vector of 1's.
 3. A data matrix of `n` measurements given for `m` bins.
 
-Each groups name must be specified as an input dictionary: `labels`. Integration occurs over the course of the data matrix.
+Each groups name must be specified as an input dictionary: `labels`.
 
-<p align="center">
-  <img width="600" src="https://drive.google.com/uc?export=view&id=1mWrsb00dr0gBYiuBcNtaC2qkzbt5FXpF">
-</p>
+Integration occurs over the course of the data matrix.
+
+![Integration Algorithm](/images/integration_algorithm.png)
 
 Data rows are corrected for dead time and summed for the specified integration input length (then averaged over the integration period).
 If stride is specified, the working timestamp will advance forward by the specified amount. While a required input, setting `stride = integration` will ignore this behavior.
