@@ -26,11 +26,7 @@ Versions 3.6-3.9 are currently supported by tests. The following Python packages
 * progressbar2
 * scipy
 
-Scripts can be run from the top-level directory:
-
-`python /path/to/RadClass/script`
-
-Or `RadClass` can be installed using pip:
+Modules can be imported from the repository directory (e.g. `from RadClass.H0 import H0`) or `RadClass` can be installed using pip:
 
 `python -m pip install /path/to/RadClass/. --user`
 
