@@ -53,10 +53,14 @@ def test_gross():
                           test_data.filename, analysis=analysis)
     classifier.run_all()
 
-    np.testing.assert_equal(analysis.triggers[0][0],
-                            timestamps[-rejected_H0_time])
+    obs_timestamp = analysis.triggers[0][0]
+    exp_timestamp = timestamps[-(rejected_H0_time+integration)]
+    np.testing.assert_equal(obs_timestamp,
+                            exp_timestamp)
     # there should only be one rejected hypothesis
-    np.testing.assert_equal(analysis.triggers.shape[0], 1)
+    obs_rows = analysis.triggers.shape[0]
+    exp_rows = 1
+    np.testing.assert_equal(obs_rows, exp_rows)
 
 
 def test_channel():
@@ -69,12 +73,18 @@ def test_channel():
                           test_data.filename, analysis=analysis)
     classifier.run_all()
 
-    np.testing.assert_equal(analysis.triggers[0][0],
-                            timestamps[-rejected_H0_time])
+    obs_timestamp = analysis.triggers[0][0]
+    exp_timestamp = timestamps[-(rejected_H0_time+integration)]
+    np.testing.assert_equal(obs_timestamp,
+                            exp_timestamp)
     # there should only be one rejected hypothesis
-    np.testing.assert_equal(analysis.triggers.shape[0], 1)
+    obs_rows = analysis.triggers.shape[0]
+    exp_rows = 1
+    np.testing.assert_equal(obs_rows, exp_rows)
     # columns = 1 for timestamp + energy_bins
-    np.testing.assert_equal(analysis.triggers.shape[1], test_data.energy_bins+1)
+    obs_cols = analysis.triggers.shape[1]
+    exp_cols = test_data.energy_bins+1
+    np.testing.assert_equal(obs_cols, exp_cols)
 
 
 def test_write_gross():
@@ -91,7 +101,9 @@ def test_write_gross():
 
     results = np.genfromtxt(filename, delimiter=',')[1:]
     # 5 columns are required since the index is also saved (via pandas)
-    np.testing.assert_equal(results.shape, (1, 5))
+    obs = results.shape
+    exp = (1, 5)
+    np.testing.assert_equal(obs, exp)
 
     os.remove(filename)
 
@@ -110,6 +122,8 @@ def test_write_channel():
 
     results = np.genfromtxt(filename, delimiter=',')[1:]
     # 2 extra columns are required for timestamp and index (via pandas)
-    np.testing.assert_equal(results.shape, (1, test_data.energy_bins+2))
+    obs = results.shape
+    exp = (1, test_data.energy_bins+2)
+    np.testing.assert_equal(obs, exp)
 
     os.remove(filename)

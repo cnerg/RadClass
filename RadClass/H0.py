@@ -51,6 +51,7 @@ class H0:
         # only needed for the first initialization
         if self.x1 is None:
             self.x1 = data
+            self.x1_timestamp = timestamp
         else:
             self.x2 = data
             n = self.x1 + self.x2
@@ -60,17 +61,19 @@ class H0:
             # only save instances with rejected null hypothesesf
             if pval <= self.significance:
                 self.triggers = np.append(self.triggers,
-                                            [[timestamp, pval,
+                                            [[self.x1_timestamp, pval,
                                             self.x1, self.x2]],
                                             axis=0)
 
             # saving data for the next integration step
             self.x1 = self.x2
+            self.x1_timestamp = timestamp
     
     def run_channels(self, data, timestamp):
         # only needed for the first initialization
         if self.x1 is None:
             self.x1 = data
+            self.x1_timestamp = timestamp
         else:
             self.x2 = data
             rejections = np.ones_like(data)
@@ -85,11 +88,12 @@ class H0:
             if np.sum(rejections) != len(rejections):
                 self.triggers = np.append(self.triggers,
                                         [np.insert(rejections,
-                                                    0, timestamp)],
+                                                    0, self.x1_timestamp)],
                                         axis=0)
 
             # saving data for the next integration step
             self.x1 = self.x2
+            self.x1_timestamp = timestamp
 
     def run(self, data, timestamp):
         '''
