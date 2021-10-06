@@ -74,7 +74,7 @@ def test_integration():
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=False)
+                          test_data.filename, store_data=True)
     classifier.run_all()
 
     # the resulting 1-hour observation should be:
@@ -93,7 +93,7 @@ def test_cache():
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=False,
+                          test_data.filename, store_data=True,
                           cache_size=cache_size)
     classifier.run_all()
 
@@ -162,7 +162,7 @@ def test_start():
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=False,
+                          test_data.filename, store_data=True,
                           cache_size=cache_size, start_time=start_time)
     classifier.run_all()
 
@@ -190,7 +190,7 @@ def test_stop():
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=False,
+                          test_data.filename, store_data=True,
                           cache_size=cache_size, stop_time=stop_time)
     classifier.run_all()
 

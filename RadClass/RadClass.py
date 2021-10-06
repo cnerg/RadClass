@@ -49,7 +49,7 @@ class RadClass:
     '''
 
     def __init__(self, stride, integration, datapath, filename, analysis=None,
-                 store_data=False, cache_size=None, start_time=None,
+                 store_data=True, cache_size=None, start_time=None,
                  stop_time=None,
                  labels={'live': '2x4x16LiveTimes',
                          'timestamps': '2x4x16Times',
@@ -58,6 +58,7 @@ class RadClass:
         self.integration = integration
         self.datapath = datapath
         self.filename = filename
+        self.store_data = store_data
 
         if cache_size is None:
             self.cache_size = self.integration
@@ -220,8 +221,8 @@ class RadClass:
             if self.analysis is not None:
                 self.analysis.run(data,
                                   self.processor.timestamps[self.current_i])
-
-            self.storage[self.processor.timestamps[self.current_i]] = data
+            if self.store_data:
+                self.storage[self.processor.timestamps[self.current_i]] = data
 
             running = self.march()
 
@@ -244,9 +245,10 @@ class RadClass:
         self.run_cache()
         self.iterate()
 
-        self.storage = pd.DataFrame.from_dict(self.storage,
-                                              orient='index',
-                                              columns=np.arange(len(self.cache[0])))
+        if self.store_data:
+            self.storage = pd.DataFrame.from_dict(self.storage,
+                                                  orient='index',
+                                                  columns=np.arange(len(self.cache[0])))
 
     def write(self, filename):
         '''
