@@ -245,10 +245,9 @@ class RadClass:
         self.run_cache()
         self.iterate()
 
-        if self.store_data:
-            self.storage = pd.DataFrame.from_dict(self.storage,
-                                                  orient='index',
-                                                  columns=np.arange(len(self.cache[0])))
+        self.storage = pd.DataFrame.from_dict(self.storage,
+                                                orient='index',
+                                                columns=np.arange(len(self.cache[0])))
 
     def write(self, filename):
         '''
