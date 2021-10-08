@@ -125,7 +125,8 @@ class RadClass:
         # normalize by live times to produce count rate data
         # processor.live can be indexed by appropriate timestamps
         # (i.e. row indices).
-        data_matrix = self.cache[rows_idx-self.cache_idx[0]] / self.processor.live[rows_idx][:, None]
+        data_matrix = (self.cache[rows_idx-self.cache_idx[0]] /
+                       self.processor.live[rows_idx][:, None])
 
         # old, more inefficient way of summing
         # total = np.zeros_like(data_matrix[0])
@@ -202,7 +203,7 @@ class RadClass:
         inverse_dt = 1.0 / (self.stop_i - self.start_i)
 
         # number of samples analyzed between log updates
-        log_interval = max(min((self.stop_i - self.start_i)/100, 10000), 10) 
+        log_interval = max(min((self.stop_i - self.start_i)/100, 10000), 10)
         running = True  # tracks whether to end analysis
         while running:
             # print status at set intervals
@@ -246,8 +247,8 @@ class RadClass:
         self.iterate()
 
         self.storage = pd.DataFrame.from_dict(self.storage,
-                                                orient='index',
-                                                columns=np.arange(len(self.cache[0])))
+                                              orient='index',
+                                              columns=np.arange(len(self.cache[0])))
 
     def write(self, filename):
         '''
