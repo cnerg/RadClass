@@ -126,12 +126,8 @@ class RadClass:
         # (i.e. row indices).
         data_matrix = self.cache[rows_idx-self.cache_idx[0]] / self.processor.live[rows_idx][:, None]
 
-        # old, more inefficient way of summing
-        # total = np.zeros_like(data_matrix[0])
-        # for row in data_matrix:
-        #    total += row
         # utilizes numpy architecture to sum data
-        total = np.sum(data_matrix, axis=0) / self.integration
+        total = np.sum(data_matrix, axis=0)
 
         return total
 
