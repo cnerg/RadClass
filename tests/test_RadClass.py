@@ -81,7 +81,7 @@ def test_integration():
     #   counts * integration / live-time
     expected = (np.full((test_data.energy_bins,),
                         integration*(integration-1)/2) /
-                (integration*test_data.livetime))
+                test_data.livetime)
     results = classifier.storage.to_numpy()[0]
     np.testing.assert_almost_equal(results, expected, decimal=2)
 
@@ -101,7 +101,7 @@ def test_cache():
     #   counts * integration / live-time
     expected = (np.full((test_data.energy_bins,),
                         integration*(integration-1)/2) /
-                (integration*test_data.livetime))
+                test_data.livetime)
     results = classifier.storage.to_numpy()[0]
     np.testing.assert_almost_equal(results, expected, decimal=2)
 
@@ -121,7 +121,7 @@ def test_stride():
                        (stride*(stride-1)/2))
     expected = (np.full((test_data.energy_bins,),
                         integration_val) /
-                (integration*test_data.livetime))
+                test_data.livetime)
     expected_samples = int(test_data.timesteps / stride)
     np.testing.assert_almost_equal(classifier.storage.iloc[1],
                                    expected,
@@ -144,7 +144,7 @@ def test_write():
     #   counts * integration / live-time
     expected = (np.full((test_data.energy_bins,),
                         integration*(integration-1)/2) /
-                (integration*test_data.livetime))
+                test_data.livetime)
     results = np.genfromtxt(filename, delimiter=',')[1, 1:]
     np.testing.assert_almost_equal(results, expected, decimal=2)
 
@@ -170,7 +170,7 @@ def test_start():
                        (integration*(integration-1)/2))
     expected = (np.full((test_data.energy_bins,),
                         integration_val) /
-                (integration*test_data.livetime))
+                test_data.livetime)
     np.testing.assert_almost_equal(classifier.storage.iloc[0],
                                    expected,
                                    decimal=2)
@@ -200,7 +200,7 @@ def test_stop():
                         (integration*(periods-2)-1)/2))
     expected = (np.full((test_data.energy_bins,),
                         integration_val) /
-                (integration*test_data.livetime))
+                test_data.livetime)
     np.testing.assert_almost_equal(classifier.storage.iloc[-1],
                                    expected,
                                    decimal=2)
