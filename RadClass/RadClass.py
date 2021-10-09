@@ -49,7 +49,7 @@ class RadClass:
     '''
 
     def __init__(self, stride, integration, datapath, filename, analysis=None,
-                 store_data=False, cache_size=None, start_time=None,
+                 store_data=True, cache_size=None, start_time=None,
                  stop_time=None,
                  labels={'live': '2x4x16LiveTimes',
                          'timestamps': '2x4x16Times',
@@ -58,6 +58,7 @@ class RadClass:
         self.integration = integration
         self.datapath = datapath
         self.filename = filename
+        self.store_data = store_data
 
         if cache_size is None:
             self.cache_size = self.integration
@@ -124,7 +125,8 @@ class RadClass:
         # normalize by live times to produce count rate data
         # processor.live can be indexed by appropriate timestamps
         # (i.e. row indices).
-        data_matrix = self.cache[rows_idx-self.cache_idx[0]] / self.processor.live[rows_idx][:, None]
+        data_matrix = (self.cache[rows_idx-self.cache_idx[0]] /
+                       self.processor.live[rows_idx][:, None])
 
         # utilizes numpy architecture to sum data
         total = np.sum(data_matrix, axis=0)
@@ -197,7 +199,7 @@ class RadClass:
         inverse_dt = 1.0 / (self.stop_i - self.start_i)
 
         # number of samples analyzed between log updates
-        log_interval = max(min((self.stop_i - self.start_i)/100, 10000), 10) 
+        log_interval = max(min((self.stop_i - self.start_i)/100, 10000), 10)
         running = True  # tracks whether to end analysis
         while running:
             # print status at set intervals
@@ -216,8 +218,8 @@ class RadClass:
             if self.analysis is not None:
                 self.analysis.run(data,
                                   self.processor.timestamps[self.current_i])
-
-            self.storage[self.processor.timestamps[self.current_i]] = data
+            if self.store_data:
+                self.storage[self.processor.timestamps[self.current_i]] = data
 
             running = self.march()
 
