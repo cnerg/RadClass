@@ -49,7 +49,7 @@ def test_estimation():
     # the resulting observation should be:
     #   counts * integration / live-time
     expected = (((integration-1)**2 + (integration-1)) /
-                (2*test_data.livetime)) * test_data.energy_bins / integration
+                (2*test_data.livetime)) * test_data.energy_bins
     np.testing.assert_almost_equal(bckg.background.iloc[0][1],
                                    expected,
                                    decimal=3)
@@ -82,7 +82,7 @@ def test_write():
     # the resulting observation should be:
     #   counts * integration / live-time
     expected = (((integration-1)**2 + (integration-1)) /
-                (2*test_data.livetime)) * test_data.energy_bins / integration
+                (2*test_data.livetime)) * test_data.energy_bins
     np.testing.assert_almost_equal(results[0][1], expected, decimal=3)
 
     time_idx = np.where(spectra == 0)[0][0]
