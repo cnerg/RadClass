@@ -41,22 +41,19 @@ class BackgroundEstimator:
         If not writing to file, this must be called manually to prune samples.
 
         Attributes:
-        samples_size: The total number of samples analyzed.
-        num_samples: The number of samples to select and save.
+        cutoff: count-rate value for the percentile of samples
         '''
+
+        # find number of background samples
+        cutoff = np.percentile(self.data[:, 1], (1-self.confidence)*100)
+        self.data = self.data[self.data[:, 1] < cutoff]
 
         # building pandas DataFrame once from numpy array
         self.background['timestamp'] = self.data[:, 0]
         self.background['count_rate'] = self.data[:, 1]
 
-        # find number of background samples
-        sample_size = len(self.background.index)
-        # +1 to account for indexing
-        num_samples = math.floor(sample_size * (1-self.confidence)) + 1
-
-        # sort and separate the smallest count-rates
+        # sort for convenience the smallest count-rates
         self.background = self.sort()
-        self.background = self.background.iloc[:num_samples]
 
     def run(self, data, timestamp):
         '''
