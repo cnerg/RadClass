@@ -199,7 +199,7 @@ class RadClass:
         inverse_dt = 1.0 / (self.stop_i - self.start_i)
 
         # number of samples analyzed between log updates
-        log_interval = max(min((self.stop_i - self.start_i)/100, 10000), 10)
+        log_interval = max(min((self.stop_i - self.start_i)/100, 100), 10)
         running = True  # tracks whether to end analysis
         while running:
             # print status at set intervals
@@ -251,4 +251,7 @@ class RadClass:
         Write results to file using Pandas' to_csv() method.
         filename should include the file extension.
         '''
-        self.storage.to_csv(filename)
+        with open(filename, 'a') as f:
+            self.storage.to_csv(f,
+                                sep=',',
+                                header=f.tell()==0)

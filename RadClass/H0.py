@@ -121,4 +121,7 @@ class H0:
             for i in range(len(self.triggers[0, 1:])):
                 results[str(i)] = self.triggers[:, i]
 
-        results.to_csv(filename, sep=',')
+        with open(filename, 'a') as f:
+            results.to_csv(f,
+                           sep=',',
+                           header=f.tell()==0)
