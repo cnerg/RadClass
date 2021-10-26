@@ -94,16 +94,14 @@ class RadClass:
         if self.start_time is not None:
             timestamp = self.processor.timestamps[self.processor.timestamps >=
                                                   self.start_time][0]
-            self.start_i = np.where(self.processor.timestamps ==
-                                    timestamp)[0][0]
+            self.start_i = np.abs(self.processor.timestamps - timestamp).argmin()
         self.start_time = self.processor.timestamps[self.start_i]
         self.current_i = self.start_i
 
         if self.stop_time is not None:
             timestamp = self.processor.timestamps[self.processor.timestamps >=
                                                   self.stop_time][0]
-            self.stop_i = np.where(self.processor.timestamps ==
-                                   timestamp)[0][0]
+            self.stop_i = np.abs(self.processor.timestamps - timestamp).argmin()
         self.stop_time = self.processor.timestamps[self.stop_i]
 
     def collapse_data(self, rows_idx):
