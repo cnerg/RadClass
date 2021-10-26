@@ -24,7 +24,6 @@ Versions 3.6-3.9 are currently supported by tests. The following Python packages
 
 * h5py
 * numpy
-* pandas
 * progressbar2
 * scipy
 
