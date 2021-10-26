@@ -146,7 +146,9 @@ def test_write():
     expected = (np.full((test_data.energy_bins,),
                         integration*(integration-1)/2) /
                 test_data.livetime)
-    results = np.loadtxt(filename, delimiter=',')[0, 1:]
+    # results array is only 1D because only one entry is expected
+    # for test_data.timesteps
+    results = np.loadtxt(filename, delimiter=',')[1:]
     np.testing.assert_almost_equal(results, expected, decimal=2)
 
     os.remove(filename)

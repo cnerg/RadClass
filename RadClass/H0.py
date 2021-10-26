@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 from scipy import stats
 
@@ -61,14 +60,14 @@ class H0:
             # only save instances with rejected null hypothesesf
             if pval <= self.significance:
                 self.triggers = np.append(self.triggers,
-                                            [[self.x1_timestamp, pval,
-                                            self.x1, self.x2]],
-                                            axis=0)
+                                          [[self.x1_timestamp, pval,
+                                           self.x1, self.x2]],
+                                          axis=0)
 
             # saving data for the next integration step
             self.x1 = self.x2
             self.x1_timestamp = timestamp
-    
+
     def run_channels(self, data, timestamp):
         # only needed for the first initialization
         if self.x1 is None:
@@ -81,15 +80,14 @@ class H0:
             p = 0.5
             for i, (x1, n) in enumerate(zip(self.x1, nvec)):
                 pval = stats.binom_test(x1, n, p,
-                                            alternative='two-sided')
+                                        alternative='two-sided')
                 if pval <= self.significance:
                     rejections[i] = pval
-            #if np.nonzero(rejections)[0].size != 0:
             if np.sum(rejections) != len(rejections):
                 self.triggers = np.append(self.triggers,
-                                        [np.insert(rejections,
-                                                    0, self.x1_timestamp)],
-                                        axis=0)
+                                          [np.insert(rejections,
+                                           0, self.x1_timestamp)],
+                                          axis=0)
 
             # saving data for the next integration step
             self.x1 = self.x2
@@ -107,21 +105,20 @@ class H0:
 
     def write(self, filename):
         '''
-        Writes results of hypothesis test to file by constructing a Pandas
-        DataFrame and saving to csv with name filename.
+        Writes results of hypothesis test to file using numpy.savetxt.
         '''
 
-        results = pd.DataFrame()
-        results['timestamps'] = self.triggers[:, 0]
-        if self.gross:
-            results['pval'] = self.triggers[:, 1]
-            results['x1'] = self.triggers[:, 2]
-            results['x2'] = self.triggers[:, 3]
-        elif not self.gross:
-            for i in range(len(self.triggers[0, 1:])):
-                results[str(i)] = self.triggers[:, i]
-
         with open(filename, 'a') as f:
-            results.to_csv(f,
-                           sep=',',
-                           header=f.tell()==0)
+            header = ''
+            # build/include header if file is new
+            if f.tell() == 0:
+                if self.gross:
+                    header = ['timestamps', 'pval', 'x1', 'x2']
+                elif not self.gross:
+                    header = np.append(['timestamp'],
+                                       np.arange(self.triggers.shape[0]-1).astype(str))
+                header = ', '.join(col for col in header)
+            np.savetxt(fname=f,
+                       X=self.triggers,
+                       delimiter=',',
+                       header=header)
