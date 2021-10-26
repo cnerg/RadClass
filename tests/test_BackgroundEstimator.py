@@ -50,12 +50,12 @@ def test_estimation():
     #   counts * integration / live-time
     expected = (((integration-1)**2 + (integration-1)) /
                 (2*test_data.livetime)) * test_data.energy_bins
-    np.testing.assert_almost_equal(bckg.background.iloc[0][1],
+    np.testing.assert_almost_equal(bckg.background[0][1],
                                    expected,
                                    decimal=3)
 
     time_idx = np.where(spectra == 0)[0][0]
-    np.testing.assert_equal(bckg.background.iloc[0][0], timestamps[time_idx])
+    np.testing.assert_equal(bckg.background[0][0], timestamps[time_idx])
 
     expected_num = round((test_data.timesteps / integration) *
                          (1 - confidence))
@@ -76,7 +76,7 @@ def test_write():
     ofilename = 'bckg_test'
     bckg.write(ofilename=ofilename)
 
-    results = np.genfromtxt(ofilename+'.csv', delimiter=',')[1:]
+    results = np.loadtxt(fname=ofilename+'.csv', delimiter=',')
     print(results)
 
     # the resulting observation should be:

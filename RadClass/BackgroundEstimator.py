@@ -1,6 +1,4 @@
 import numpy as np
-import pandas as pd
-import math
 
 
 class BackgroundEstimator:
@@ -10,9 +8,8 @@ class BackgroundEstimator:
         to file with corresponding gross count rate.
 
     Attributes:
-    background: Pandas DataFrame used to store timestamps and count rates.
-    data: Numpy array used to incrementally store data throughout analysis
-        before sending/saving in background.
+    header: Column names used for writing to file.
+    background: Numpy array used to store timestamps and count rates.
     confidence: Percentage of samples to disregard. 1-confidence number of
         samples are saved. For example, if confidence=0.95, the lowest 5% of
         count rates/timestamps are saved.
@@ -20,24 +17,25 @@ class BackgroundEstimator:
     energy_bins: The number of energy bins defined by the data under analysis.
     '''
 
-    background = pd.DataFrame(columns=['timestamp', 'count_rate'])
-    data = np.empty((0, 2))
+    # columns: timestamp, count-rate
+    header = ['timestamp', 'count-rate']
+    background = np.empty((0, 2))
 
     def __init__(self, confidence=0.95):
         self.confidence = confidence
 
     def sort(self):
         '''
-        Wrapper function for Pandas DataFrame sort_values method. Organizes
-            samples in ascending order of gross count rate.
+        Wrapper function for numpy array sort. Organizes samples in ascending
+            order of gross count rate, i.e. column 1.
         '''
 
-        return self.background.sort_values(by='count_rate', ascending=True)
+        # sort rows of background by the second column order
+        return self.background[np.argsort(self.background[:,1])]
 
     def estimate(self):
         '''
-        Saves data to a Pandas DataFrame and selects a subset with the smallest
-            gross count rates.
+        Selects a subset of numpy array with the smallest gross count rates.
         If not writing to file, this must be called manually to prune samples.
 
         Attributes:
@@ -45,12 +43,8 @@ class BackgroundEstimator:
         '''
 
         # find number of background samples
-        cutoff = np.percentile(self.data[:, 1], (1-self.confidence)*100)
-        self.data = self.data[self.data[:, 1] < cutoff]
-
-        # building pandas DataFrame once from numpy array
-        self.background['timestamp'] = self.data[:, 0]
-        self.background['count_rate'] = self.data[:, 1]
+        cutoff = np.percentile(self.background[:, 1], (1-self.confidence)*100)
+        self.background = self.background[self.background[:, 1] < cutoff]
 
         # sort for convenience the smallest count-rates
         self.background = self.sort()
@@ -67,7 +61,7 @@ class BackgroundEstimator:
         count_rate = np.sum(data)
 
         # using numpy to build lightweight matrix instead of pandas
-        self.data = np.vstack([self.data, [timestamp, count_rate]])
+        self.background = np.vstack([self.background, [timestamp, count_rate]])
 
     def write(self, ofilename='bckg_results'):
         '''
@@ -81,4 +75,7 @@ class BackgroundEstimator:
 
         # until estimate() is called, all background count-rates are saved
         self.estimate()
-        self.background.to_csv(ofilename+'.csv', index=False)
+        np.savetxt(fname=ofilename+'.csv',
+                   X=self.background,
+                   delimiter=',',
+                   header=', '.join(col for col in self.header))
