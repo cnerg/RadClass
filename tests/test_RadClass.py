@@ -83,7 +83,6 @@ def test_integration():
                         integration*(integration-1)/2) /
                 test_data.livetime)
     results = classifier.storage[0][1:][0]
-    print(results)
     np.testing.assert_almost_equal(results, expected, decimal=2)
 
 
