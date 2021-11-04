@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import time
 import logging
 import progressbar
@@ -95,16 +94,18 @@ class RadClass:
         if self.start_time is not None:
             timestamp = self.processor.timestamps[self.processor.timestamps >=
                                                   self.start_time][0]
-            self.start_i = np.where(self.processor.timestamps ==
-                                    timestamp)[0][0]
+            self.start_i = max(np.searchsorted(self.processor.timestamps,
+                                               timestamp,
+                                               side='right')-1, 0)
         self.start_time = self.processor.timestamps[self.start_i]
         self.current_i = self.start_i
 
         if self.stop_time is not None:
             timestamp = self.processor.timestamps[self.processor.timestamps >=
                                                   self.stop_time][0]
-            self.stop_i = np.where(self.processor.timestamps ==
-                                   timestamp)[0][0]
+            self.stop_i = np.searchsorted(self.processor.timestamps,
+                                          timestamp,
+                                          side='right')-1
         self.stop_time = self.processor.timestamps[self.stop_i]
 
     def collapse_data(self, rows_idx):
@@ -183,6 +184,10 @@ class RadClass:
         return running
 
     def run_cache(self):
+        '''
+        Updates RadClass.cache to contain the requisite rows needed for
+        integration. Tracked via indices and cache_size.
+        '''
         end_i = min(self.current_i + self.cache_size,
                     len(self.processor.timestamps) - 1)
         # enumerate number of rows to integrate exclusive of the endpoint
@@ -195,20 +200,20 @@ class RadClass:
         until EOF reached. Prints progress over the course of the analysis.
         Only runs for a set node (datapath) with data already queued.
         '''
-        bar = progressbar.ProgressBar(max_value=100, redirect_stdout=True)
+        pbar = progressbar.ProgressBar(max_value=100, redirect_stdout=True)
         inverse_dt = 1.0 / (self.stop_i - self.start_i)
 
         # number of samples analyzed between log updates
-        log_interval = max(min((self.stop_i - self.start_i)/100, 10000), 10)
+        log_interval = max(min((self.stop_i - self.start_i)/100, 100), 10)
         running = True  # tracks whether to end analysis
         while running:
             # print status at set intervals
             if (self.current_i - self.start_i) % log_interval == 0:
-                bar.update(round((self.current_i - self.start_i) * inverse_dt * 100, 4))
+                pbar.update(round((self.current_i - self.start_i) * inverse_dt * 100, 4))
 
                 current_time = self.processor.timestamps[self.current_i]
                 readable_time = time.strftime('%m/%d/%Y %H:%M:%S',  time.gmtime(current_time))
-                logging.info("--\tCurrently working on timestamps: {}\n".format(readable_time))
+                logging.info("--\tCurrently working on timestamps: %d\n", readable_time)
 
             # execute analysis and advance in stride
             rows_idx = self.collect_rows()
@@ -225,7 +230,7 @@ class RadClass:
 
         # print completion summary
         logging.info("\n...Complete...")
-        logging.info("Finished analyzing {}.\n\tNumber of observations analyzed: {}".format(self.filename, len(self.processor.timestamps)))
+        logging.info("Finished analyzing %s.\n\tNumber of observations analyzed: %d", self.filename, len(self.processor.timestamps))
 
     def run_all(self):
         '''
@@ -242,13 +247,26 @@ class RadClass:
         self.run_cache()
         self.iterate()
 
-        self.storage = pd.DataFrame.from_dict(self.storage,
-                                              orient='index',
-                                              columns=np.arange(len(self.cache[0])))
+        # do not convert to numpy array if empty
+        if bool(self.storage):
+            self.storage = np.insert(arr=np.array(list(self.storage.values())),
+                                     obj=0,
+                                     values=list(self.storage.keys()),
+                                     axis=1)
 
     def write(self, filename):
         '''
-        Write results to file using Pandas' to_csv() method.
+        Write results to file using numpy.savetxt() method.
         filename should include the file extension.
         '''
-        self.storage.to_csv(filename)
+        with open(filename, 'a') as f:
+            header = ''
+            # build/include header if file is new
+            if f.tell() == 0:
+                header = np.append(['timestamp'],
+                                   np.arange(len(self.cache[0])).astype(str))
+                header = ', '.join(col for col in header)
+            np.savetxt(fname=f,
+                       X=self.storage,
+                       delimiter=',',
+                       header=header)

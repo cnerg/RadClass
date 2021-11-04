@@ -1,5 +1,4 @@
 numpy
 h5py
-pandas
 progressbar2
 scipy

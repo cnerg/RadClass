@@ -82,7 +82,7 @@ def test_integration():
     expected = (np.full((test_data.energy_bins,),
                         integration*(integration-1)/2) /
                 test_data.livetime)
-    results = classifier.storage.to_numpy()[0]
+    results = classifier.storage[0][1:][0]
     np.testing.assert_almost_equal(results, expected, decimal=2)
 
 
@@ -102,7 +102,7 @@ def test_cache():
     expected = (np.full((test_data.energy_bins,),
                         integration*(integration-1)/2) /
                 test_data.livetime)
-    results = classifier.storage.to_numpy()[0]
+    results = classifier.storage[0, 1:]
     np.testing.assert_almost_equal(results, expected, decimal=2)
 
 
@@ -123,7 +123,7 @@ def test_stride():
                         integration_val) /
                 test_data.livetime)
     expected_samples = int(test_data.timesteps / stride)
-    np.testing.assert_almost_equal(classifier.storage.iloc[1],
+    np.testing.assert_almost_equal(classifier.storage[1, 1:],
                                    expected,
                                    decimal=2)
     np.testing.assert_equal(len(classifier.storage), expected_samples)
@@ -145,7 +145,9 @@ def test_write():
     expected = (np.full((test_data.energy_bins,),
                         integration*(integration-1)/2) /
                 test_data.livetime)
-    results = np.genfromtxt(filename, delimiter=',')[1, 1:]
+    # results array is only 1D because only one entry is expected
+    # for test_data.timesteps
+    results = np.loadtxt(filename, delimiter=',')[1:]
     np.testing.assert_almost_equal(results, expected, decimal=2)
 
     os.remove(filename)
@@ -171,7 +173,7 @@ def test_start():
     expected = (np.full((test_data.energy_bins,),
                         integration_val) /
                 test_data.livetime)
-    np.testing.assert_almost_equal(classifier.storage.iloc[0],
+    np.testing.assert_almost_equal(classifier.storage[0, 1:],
                                    expected,
                                    decimal=2)
     np.testing.assert_equal(len(classifier.storage), num_results-2)
@@ -201,7 +203,7 @@ def test_stop():
     expected = (np.full((test_data.energy_bins,),
                         integration_val) /
                 test_data.livetime)
-    np.testing.assert_almost_equal(classifier.storage.iloc[-1],
+    np.testing.assert_almost_equal(classifier.storage[-1, 1:],
                                    expected,
                                    decimal=2)
     np.testing.assert_equal(len(classifier.storage), periods-1)

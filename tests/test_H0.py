@@ -90,7 +90,7 @@ def test_channel():
 def test_write_gross():
     stride = 10
     integration = 10
-    filename = 'h0test.csv'
+    filename = 'h0test_gross.csv'
 
     # run handler script with analysis parameter
     analysis = H0()
@@ -99,10 +99,10 @@ def test_write_gross():
     classifier.run_all()
     analysis.write(filename)
 
-    results = np.genfromtxt(filename, delimiter=',')[1:]
-    # 5 columns are required since the index is also saved (via pandas)
+    results = np.loadtxt(filename, delimiter=',')
+    # expected shape is only 1D because only 1 entry is expected
     obs = results.shape
-    exp = (1, 5)
+    exp = (4,)
     np.testing.assert_equal(obs, exp)
 
     os.remove(filename)
@@ -111,7 +111,7 @@ def test_write_gross():
 def test_write_channel():
     stride = 10
     integration = 10
-    filename = 'h0test.csv'
+    filename = 'h0test_channel.csv'
 
     # run handler script with analysis parameter
     analysis = H0(gross=False, energy_bins=test_data.energy_bins)
@@ -120,10 +120,11 @@ def test_write_channel():
     classifier.run_all()
     analysis.write(filename)
 
-    results = np.genfromtxt(filename, delimiter=',')[1:]
-    # 2 extra columns are required for timestamp and index (via pandas)
+    results = np.loadtxt(filename, delimiter=',')
+    # 1 extra columns are required for timestamp
+    # expected shape is only 1D because only 1 entry is expected
     obs = results.shape
-    exp = (1, test_data.energy_bins+2)
+    exp = (test_data.energy_bins+1,)
     np.testing.assert_equal(obs, exp)
 
     os.remove(filename)
