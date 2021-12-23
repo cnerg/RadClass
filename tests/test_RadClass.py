@@ -1,4 +1,5 @@
 import numpy as np
+import h5py
 import pytest
 import os
 from datetime import datetime, timedelta
@@ -132,7 +133,7 @@ def test_stride():
 def test_write():
     stride = 60
     integration = 60
-    filename = 'test_results.csv'
+    filename = 'test_results'
 
     # run handler script
     classifier = RadClass(stride, integration, test_data.datapath,
@@ -147,10 +148,11 @@ def test_write():
                 test_data.livetime)
     # results array is only 1D because only one entry is expected
     # for test_data.timesteps
-    results = np.loadtxt(filename, delimiter=',')[1:]
-    np.testing.assert_almost_equal(results, expected, decimal=2)
+    keys = ['timestamps', 'spectra']
+    results = h5py.File(filename+'.h5', 'r')
+    np.testing.assert_almost_equal(results[keys[1]][0], expected, decimal=2)
 
-    os.remove(filename)
+    os.remove(filename+'.h5')
 
 
 def test_start():
