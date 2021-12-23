@@ -257,8 +257,8 @@ class RadClass:
 
     def write(self, filename):
         '''
-        Write results to file using numpy.savetxt() method.
-        filename should include the file extension.
+        Write results to file using h5py, similar to MINOS file structure.
+        filename should not include the file extension.
         '''
         with h5py.File(filename+'.h5', 'a') as f:
             keys = ['timestamps', 'spectra']
