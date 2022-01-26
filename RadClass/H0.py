@@ -104,8 +104,6 @@ class H0:
             self.x2 = data
             rejections = np.ones_like(data)
             nvec = self.x1 + self.x2
-            print('x1',self.x1)
-            print('x2',self.x2)
             p = 0.5
             for i, (x1, n) in enumerate(zip(self.x1, nvec)):
                 # scipy.stats.binomtest will fail if n (# of trials)
@@ -118,7 +116,6 @@ class H0:
 
                 if pval <= self.significance:
                     rejections[i] = pval
-            print(rejections)
             if np.sum(rejections) != len(rejections):
                 self.triggers = np.append(self.triggers,
                                           [np.insert(np.log10(rejections),
