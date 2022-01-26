@@ -68,8 +68,13 @@ class H0:
             self.x2 = data
             n = self.x1 + self.x2
             p = 0.5
-            pval = stats.binomtest(int(self.x1), int(n), p,
-                                   alternative='two-sided').pvalue
+            # scipy.stats.binomtest will fail if n (# of trials)
+            # is less than 1 (possible for low count-rate integration times)
+            if int(n) < 1:
+                pval = 1.0
+            else:
+                pval = stats.binomtest(int(self.x1), int(n), p,
+                                       alternative='two-sided').pvalue
 
             # only save instances with rejected null hypotheses
             if pval <= self.significance:
@@ -101,8 +106,14 @@ class H0:
             nvec = self.x1 + self.x2
             p = 0.5
             for i, (x1, n) in enumerate(zip(self.x1, nvec)):
-                pval = stats.binomtest(int(x1), int(n), p,
-                                       alternative='two-sided').pvalue
+                # scipy.stats.binomtest will fail if n (# of trials)
+                # is less than 1 (possible for high-energy bins)
+                if int(n) < 1:
+                    pval = 1.0
+                else:
+                    pval = stats.binomtest(int(x1), int(n), p,
+                                           alternative='two-sided').pvalue
+                    
                 if pval <= self.significance:
                     rejections[i] = pval
             if np.sum(rejections) != len(rejections):
