@@ -128,3 +128,44 @@ def test_write_channel():
     np.testing.assert_equal(obs, exp)
 
     os.remove(filename)
+
+
+def test_zero_counts_gross():
+    significance = 1.0
+    energy_bins = 10
+
+    analysis = H0(significance=significance,
+                  gross=True,
+                  energy_bins=energy_bins)
+
+    spectrum1 = np.zeros((10,))
+    spectrum2 = np.zeros((10,))
+    # run twice for initialization
+    analysis.run_gross(spectrum1, 1)
+    analysis.run_gross(spectrum2, 2)
+
+    obs = analysis.triggers
+    exp = np.array([[1.0, 0.0, 0.0, 0.0]])
+    np.testing.assert_equal(obs, exp)
+
+
+def test_zero_counts_channel():
+    significance = 1.0
+    energy_bins = 10
+
+    analysis = H0(significance=significance,
+                  gross=False,
+                  energy_bins=energy_bins)
+
+    spectrum1 = np.zeros((10,))
+    spectrum2 = np.zeros((10,))
+    spectrum2[0] = 100.0
+    # run twice for initialization
+    analysis.run_channels(spectrum1, 1)
+    analysis.run_channels(spectrum2, 2)
+
+    obs_pvals = analysis.triggers[0][1:]
+    obs_ts = analysis.triggers[0][0]
+    np.testing.assert_equal(obs_ts, 1)
+    # only the first channel will have failed
+    np.testing.assert_equal(np.count_nonzero(obs_pvals), 1)
