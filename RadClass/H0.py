@@ -45,6 +45,13 @@ class H0:
             self.triggers = np.empty((0, energy_bins+1))
 
     def run_gross(self, data, timestamp):
+        '''
+        Applies scipy.stats.binomtest (requires v. 1.7.0 or greater)
+        to the gross, integrated count-rate. Spectral data is
+        passed by RadClass.RadClass and integrated along all
+        channels. Count-rates at x1 and x2 are tracked with
+        associated timestamp for next binomtest at next timestamp.
+        '''
         data = np.sum(data)
 
         # only needed for the first initialization
@@ -55,7 +62,8 @@ class H0:
             self.x2 = data
             n = self.x1 + self.x2
             p = 0.5
-            pval = stats.binom_test(self.x1, n, p, alternative='two-sided')
+            pval = stats.binomtest(int(self.x1), int(n), p,
+                                   alternative='two-sided').pvalue
 
             # only save instances with rejected null hypothesesf
             if pval <= self.significance:
@@ -69,6 +77,14 @@ class H0:
             self.x1_timestamp = timestamp
 
     def run_channels(self, data, timestamp):
+        '''
+        Applies scipy.stats.binomtest (requires v. 1.7.0 or greater)
+        to the channel/energy-wise count-rate. Spectral data is
+        passed by RadClass.RadClass and binomtest is applied to
+        each channel individually. Count-rates, x1 and x2, for
+        every spectral bin are tracked with associated timestamp
+        for next binomtest at next timestamp.
+        '''
         # only needed for the first initialization
         if self.x1 is None:
             self.x1 = data
@@ -79,8 +95,8 @@ class H0:
             nvec = self.x1 + self.x2
             p = 0.5
             for i, (x1, n) in enumerate(zip(self.x1, nvec)):
-                pval = stats.binom_test(x1, n, p,
-                                        alternative='two-sided')
+                pval = stats.binomtest(int(x1), int(n), p,
+                                       alternative='two-sided').pvalue
                 if pval <= self.significance:
                     rejections[i] = pval
             if np.sum(rejections) != len(rejections):
