@@ -15,7 +15,7 @@ class H0:
 
     For information on testing regime, see doi: 10.2307/2332612.
     For information on scipy's binomial test, see:
-    docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binom_test.html
+    docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binomtest.html
 
     Attributes:
     significance: Significance level for hypothesis test. If the resulting
@@ -29,6 +29,12 @@ class H0:
         rejected null hypotheses per the inputted significance level.
     trigger_times: The timestamp (in Unix epoch timestamp) for rejected null
         hypothesis via triggers.
+
+    Returns:
+    pvals: Maximum possible value is 1.0. pvals associated with rejected null
+        hypotheses (pval <= significance) are stored as log_10(pval).
+        Therefore, maximum possible -stored- value is 0.0. This avoids
+        float rounding for extremely small pvals.
     '''
 
     def __init__(self, significance=0.05, gross=True, energy_bins=1000):
@@ -65,10 +71,10 @@ class H0:
             pval = stats.binomtest(int(self.x1), int(n), p,
                                    alternative='two-sided').pvalue
 
-            # only save instances with rejected null hypothesesf
+            # only save instances with rejected null hypotheses
             if pval <= self.significance:
                 self.triggers = np.append(self.triggers,
-                                          [[self.x1_timestamp, pval,
+                                          [[self.x1_timestamp, np.log10(pval),
                                            self.x1, self.x2]],
                                           axis=0)
 
@@ -101,7 +107,7 @@ class H0:
                     rejections[i] = pval
             if np.sum(rejections) != len(rejections):
                 self.triggers = np.append(self.triggers,
-                                          [np.insert(rejections,
+                                          [np.insert(np.log10(rejections),
                                            0, self.x1_timestamp)],
                                           axis=0)
 
