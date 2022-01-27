@@ -71,15 +71,17 @@ class H0:
             # scipy.stats.binomtest will fail if n (# of trials)
             # is less than 1 (possible for low count-rate integration times)
             if int(n) < 1:
-                pval = 1.0
+                pval = 0.0
             else:
-                pval = stats.binomtest(int(self.x1), int(n), p,
-                                       alternative='two-sided').pvalue
+                pval = np.log10(stats.binomtest(int(self.x1), int(n), p,
+                                                alternative='two-sided').pvalue)
+                if np.isinf(pval):
+                    pval = -350
 
             # only save instances with rejected null hypotheses
-            if pval <= self.significance:
+            if pval <= np.log10(self.significance):
                 self.triggers = np.append(self.triggers,
-                                          [[self.x1_timestamp, np.log10(pval),
+                                          [[self.x1_timestamp, pval,
                                            self.x1, self.x2]],
                                           axis=0)
 
@@ -102,23 +104,26 @@ class H0:
             self.x1_timestamp = timestamp
         else:
             self.x2 = data
-            rejections = np.ones_like(data)
+            rejections = np.zeros_like(data)
             nvec = self.x1 + self.x2
             p = 0.5
             for i, (x1, n) in enumerate(zip(self.x1, nvec)):
                 # scipy.stats.binomtest will fail if n (# of trials)
                 # is less than 1 (possible for high-energy bins)
                 if int(n) < 1:
-                    pval = 1.0
+                    pval = 0.0
                 else:
-                    pval = stats.binomtest(int(x1), int(n), p,
-                                           alternative='two-sided').pvalue
+                    pval = np.log10(stats.binomtest(int(x1), int(n), p,
+                                                    alternative='two-sided').pvalue)
+                    if np.isinf(pval):
+                        pval = -350.0  # np.log10(1E-350)
 
-                if pval <= self.significance:
+                if pval <= np.log10(self.significance):
                     rejections[i] = pval
-            if np.sum(rejections) != len(rejections):
+
+            if np.sum(rejections) != 0:
                 self.triggers = np.append(self.triggers,
-                                          [np.insert(np.log10(rejections),
+                                          [np.insert(rejections,
                                            0, self.x1_timestamp)],
                                           axis=0)
 

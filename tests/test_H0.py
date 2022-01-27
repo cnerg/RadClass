@@ -131,6 +131,7 @@ def test_write_channel():
 
 
 def test_zero_counts_gross():
+    # accept all pvals
     significance = 1.0
     energy_bins = 10
 
@@ -150,6 +151,7 @@ def test_zero_counts_gross():
 
 
 def test_zero_counts_channel():
+    # accept all pvals
     significance = 1.0
     energy_bins = 10
 
