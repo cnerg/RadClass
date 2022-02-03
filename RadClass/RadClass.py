@@ -93,7 +93,12 @@ class RadClass:
 
         if self.start_time is not None:
             timestamp = self.processor.timestamps[self.processor.timestamps >=
-                                                  self.start_time][0]
+                                                  self.start_time]
+            # check if any timestamps were found
+            if timestamp.size == 0:
+                timestamp = self.processor.timestamps[0]
+            else:
+                timestamp = timestamp[0]
             self.start_i = max(np.searchsorted(self.processor.timestamps,
                                                timestamp,
                                                side='right')-1, 0)
@@ -102,7 +107,12 @@ class RadClass:
 
         if self.stop_time is not None:
             timestamp = self.processor.timestamps[self.processor.timestamps >=
-                                                  self.stop_time][0]
+                                                  self.stop_time]
+            # check if any timestamps were found
+            if timestamp.size == 0:
+                timestamp = self.processor.timestamps[-1]
+            else:
+                timestamp = timestamp[0]
             self.stop_i = np.searchsorted(self.processor.timestamps,
                                           timestamp,
                                           side='right')-1
