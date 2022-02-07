@@ -38,7 +38,7 @@ def test_init():
                   gross=gross,
                   energy_bins=energy_bins)
 
-    np.testing.assert_equal(analysis.significance, significance)
+    np.testing.assert_equal(analysis.log_significance, np.log10(significance))
     np.testing.assert_equal(analysis.gross, gross)
     np.testing.assert_equal(analysis.triggers.shape, (0, energy_bins+1))
 
@@ -171,3 +171,5 @@ def test_zero_counts_channel():
     np.testing.assert_equal(obs_ts, 1)
     # only the first channel will have failed
     np.testing.assert_equal(np.count_nonzero(obs_pvals), 1)
+    # check that the first channel alone is rejected
+    np.testing.assert_equal(np.sum(obs_pvals), obs_pvals[0])

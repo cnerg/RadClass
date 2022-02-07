@@ -38,7 +38,8 @@ class H0:
     '''
 
     def __init__(self, significance=0.05, gross=True, energy_bins=1000):
-        self.significance = significance
+        # default: store log10 value of significance for comparison
+        self.log_significance = np.log10(significance)
         self.gross = gross
         self.x1 = None
 
@@ -49,6 +50,26 @@ class H0:
         else:
             # all p-vals for rejected hypothesis are saved in this sparse array
             self.triggers = np.empty((0, energy_bins+1))
+
+    def binom(self, x1, n, p):
+        '''
+        Private method for running binomial test.
+
+        Return:
+        lpval: log base 10 p-value result of scipy.stats.binomtest.
+        '''
+        # np.log10(1E-350), chosen to be smaller than any possible result
+        min_lpval = -350.0
+        # scipy.stats.binomtest will fail if n (# of trials)
+        # is less than 1 (possible for high-energy bins)
+        if int(n) < 1:
+            lpval = 0.0
+        else:
+            lpval = np.log10(stats.binomtest(int(x1), int(n), p,
+                                             alternative='two-sided').pvalue)
+            if np.isinf(lpval):
+                lpval = min_lpval
+        return lpval
 
     def run_gross(self, data, timestamp):
         '''
@@ -68,20 +89,12 @@ class H0:
             self.x2 = data
             n = self.x1 + self.x2
             p = 0.5
-            # scipy.stats.binomtest will fail if n (# of trials)
-            # is less than 1 (possible for low count-rate integration times)
-            if int(n) < 1:
-                pval = 0.0
-            else:
-                pval = np.log10(stats.binomtest(int(self.x1), int(n), p,
-                                                alternative='two-sided').pvalue)
-                if np.isinf(pval):
-                    pval = -350
+            lpval = self.binom(self.x1, n, p)
 
             # only save instances with rejected null hypotheses
-            if pval <= np.log10(self.significance):
+            if lpval <= self.log_significance:
                 self.triggers = np.append(self.triggers,
-                                          [[self.x1_timestamp, pval,
+                                          [[self.x1_timestamp, lpval,
                                            self.x1, self.x2]],
                                           axis=0)
 
@@ -108,18 +121,13 @@ class H0:
             nvec = self.x1 + self.x2
             p = 0.5
             for i, (x1, n) in enumerate(zip(self.x1, nvec)):
-                # scipy.stats.binomtest will fail if n (# of trials)
-                # is less than 1 (possible for high-energy bins)
-                if int(n) < 1:
-                    pval = 0.0
-                else:
-                    pval = np.log10(stats.binomtest(int(x1), int(n), p,
-                                                    alternative='two-sided').pvalue)
-                    if np.isinf(pval):
-                        pval = -350.0  # np.log10(1E-350)
+                print(type(x1))
+                print(type(n))
+                print(type(p))
+                lpval = self.binom(x1, n, p)
 
-                if pval <= np.log10(self.significance):
-                    rejections[i] = pval
+                if lpval <= self.log_significance:
+                    rejections[i] = lpval
 
             if np.sum(rejections) != 0:
                 self.triggers = np.append(self.triggers,
