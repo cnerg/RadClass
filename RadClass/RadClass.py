@@ -75,6 +75,12 @@ class RadClass:
         '''
         Initialize a file for analysis using the load_data.py scripts.
         Collects all information and assumes it exists in the file.
+        NOTE: queue_file will include all timestamps within the range of the
+        user's start & stop, but not exceed it. e.g. if the user asks for a
+        start timestamp of 2.5, and timestamps 2 and 3 are present, then
+        3 will be chosen as the start-time so as not to include data prior
+        to the user's 2.5. Likewise, RadClass will only include data less than
+        the user's stop-time
 
         Attributes:
         processor: DataSet object responsible for indexing data from file.
@@ -86,8 +92,8 @@ class RadClass:
 
         self.processor = ds.DataSet(self.labels)
         self.processor.init_database(self.filename, self.datapath)
-        # parameters for keeping track of progress through a file
 
+        # parameters for keeping track of progress through a file
         self.start_i = 0
         self.stop_i = len(self.processor.timestamps) - 1
 
@@ -96,7 +102,7 @@ class RadClass:
                                                   self.start_time]
             # check if any timestamps were found
             if timestamp.size == 0:
-                timestamp = self.processor.timestamps[0]
+                raise ValueError('User start time is larger than all timestamps.')
             else:
                 timestamp = timestamp[0]
             self.start_i = max(np.searchsorted(self.processor.timestamps,
@@ -106,6 +112,11 @@ class RadClass:
         self.current_i = self.start_i
 
         if self.stop_time is not None:
+            if self.stop_time <= self.processor.timestamps[0]:
+                raise ValueError('User stop time is no greater than the first timestamp.')
+            elif self.start_time >= self.stop_time:
+                raise ValueError('User start time is larger than stop time.')
+
             timestamp = self.processor.timestamps[self.processor.timestamps >=
                                                   self.stop_time]
             # check if any timestamps were found
