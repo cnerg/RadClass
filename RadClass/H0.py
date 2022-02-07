@@ -65,10 +65,12 @@ class H0:
         if int(n) < 1:
             lpval = 0.0
         else:
-            lpval = np.log10(stats.binomtest(int(x1), int(n), p,
-                                             alternative='two-sided').pvalue)
-            if np.isinf(lpval):
+            pval = stats.binomtest(int(x1), int(n), p,
+                                   alternative='two-sided').pvalue
+            if pval == 0.0:
                 lpval = min_lpval
+            else:
+                lpval = np.log10(pval)
         return lpval
 
     def run_gross(self, data, timestamp):
