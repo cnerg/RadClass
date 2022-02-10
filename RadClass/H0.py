@@ -123,9 +123,6 @@ class H0:
             nvec = self.x1 + self.x2
             p = 0.5
             for i, (x1, n) in enumerate(zip(self.x1, nvec)):
-                print(type(x1))
-                print(type(n))
-                print(type(p))
                 lpval = self.binom(x1, n, p)
 
                 if lpval <= self.log_significance:
