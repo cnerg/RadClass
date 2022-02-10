@@ -98,13 +98,12 @@ class RadClass:
         self.stop_i = len(self.processor.timestamps) - 1
 
         if self.start_time is not None:
-            timestamp = self.processor.timestamps[self.processor.timestamps >=
-                                                  self.start_time]
-            # check if any timestamps were found
-            if timestamp.size == 0:
+            # invalid user input
+            if self.start_time > self.processor.timestamps[-1]:
                 raise ValueError('User start time is larger than all timestamps.')
-            else:
-                timestamp = timestamp[0]
+            timestamp = self.processor.timestamps[self.processor.timestamps >=
+                                                  self.start_time][0]
+            # search for start or choose first timestamp
             self.start_i = max(np.searchsorted(self.processor.timestamps,
                                                timestamp,
                                                side='right')-1, 0)
@@ -112,15 +111,14 @@ class RadClass:
         self.current_i = self.start_i
 
         if self.stop_time is not None:
-            if self.stop_time <= self.processor.timestamps[0]:
-                raise ValueError('User stop time is no greater than the first timestamp.')
-            elif self.start_time >= self.stop_time:
-                raise ValueError('User start time is larger than stop time.')
-
+            # invalid user input
+            if self.stop_time < self.processor.timestamps[0]:
+                raise ValueError('User stop time is less than the first timestamp.')
             timestamp = self.processor.timestamps[self.processor.timestamps >=
                                                   self.stop_time]
-            # check if any timestamps were found
+            # user stop_time is larger than any possible timestamps
             if timestamp.size == 0:
+                # therefore default to last timestamp
                 timestamp = self.processor.timestamps[-1]
             else:
                 timestamp = timestamp[0]
@@ -128,6 +126,14 @@ class RadClass:
                                           timestamp,
                                           side='right')-1
         self.stop_time = self.processor.timestamps[self.stop_i]
+
+        # invalid user input
+        if self.start_time > self.stop_time:
+            raise ValueError('User start time is larger than stop time.')
+        # no data will be processed
+        elif self.start_time == self.stop_time:
+            logging.info("start_time=stop_time=%d", self.start_time)
+            raise RuntimeWarning('Start and Stop times used are the same, no data processed.')
 
     def collapse_data(self, rows_idx):
         '''
@@ -227,7 +233,7 @@ class RadClass:
         # number of samples analyzed between log updates
         log_interval = max(min((self.stop_i - self.start_i)/100, 100), 10)
         running = True  # tracks whether to end analysis
-        while running:
+        while running and (self.start_i != self.stop_i):
             # print status at set intervals
             if (self.current_i - self.start_i) % log_interval == 0:
                 pbar.update(round((self.current_i - self.start_i) * inverse_dt * 100, 4))
