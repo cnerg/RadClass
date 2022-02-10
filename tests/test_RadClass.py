@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 import numpy as np
 import pytest
 import os
@@ -207,3 +208,83 @@ def test_stop():
                                    expected,
                                    decimal=2)
     np.testing.assert_equal(len(classifier.storage), periods-1)
+
+
+def test_max_stop():
+    # arbitrary but results in less than # of timestamps
+    periods = 10
+
+    stride = int(test_data.timesteps/periods)
+    integration = int(test_data.timesteps/periods)
+    cache_size = 100
+    # stop after n-1 integration periods
+    # so n-1 results expected
+    stop_time = timestamps[-1]+1000.0
+
+    # run handler script
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, store_data=True,
+                          cache_size=cache_size, stop_time=stop_time)
+    classifier.run_all()
+
+    integration_val = (((integration*(periods-1)) *
+                        (integration*(periods-1)-1)/2) -
+                       ((integration*(periods-2)) *
+                        (integration*(periods-2)-1)/2))
+    expected = (np.full((test_data.energy_bins,),
+                        integration_val) /
+                test_data.livetime)
+    np.testing.assert_almost_equal(classifier.storage[-1, 1:],
+                                   expected,
+                                   decimal=2)
+    np.testing.assert_equal(len(classifier.storage), periods-1)
+
+
+def test_bad_start_stop():
+    '''
+    Checks if start_time > stop_time
+    '''
+    stride = int(test_data.timesteps/10)
+    integration = int(test_data.timesteps/10)
+
+    start_time = timestamps[1]
+    stop_time = timestamps[0]
+
+    # run handler script
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, start_time=start_time,
+                          stop_time=stop_time)
+    with pytest.raises(ValueError):
+        classifier.queue_file()
+
+
+def test_bad_start():
+    '''
+    Checks if start_time > last timestamp
+    '''
+    stride = int(test_data.timesteps/10)
+    integration = int(test_data.timesteps/10)
+
+    start_time = timestamps[-1] + 1000.0
+
+    # run handler script
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, start_time=start_time)
+    with pytest.raises(ValueError):
+        classifier.queue_file()
+
+
+def test_bad_stop():
+    '''
+    Checks if stop_time < first timestamp
+    '''
+    stride = int(test_data.timesteps/10)
+    integration = int(test_data.timesteps/10)
+
+    stop_time = timestamps[0] - 1000.0
+
+    # run handler script
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, stop_time=stop_time)
+    with pytest.raises(ValueError):
+        classifier.queue_file()
