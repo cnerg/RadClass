@@ -93,45 +93,39 @@ class RadClass:
         self.processor = ds.DataSet(self.labels)
         self.processor.init_database(self.filename, self.datapath)
 
+        # possible invalid user input scenarios
+        # user start time is great than the last possible data timestamp
+        if self.start_time is not None and self.start_time > self.processor.timestamps[-1]:
+            raise ValueError('User start time is larger than all timestamps.')
+        # user stop time is less than the first possible timestamp
+        elif self.stop_time is not None and self.stop_time < self.processor.timestamps[0]:
+                raise ValueError('User stop time is less than the first timestamp.')
+        # user start time is greater than user stop time
+        elif self.start_time is not None and self.stop_time is not None and self.start_time > self.stop_time:
+            raise ValueError('User start time is larger than stop time.')
+
         # parameters for keeping track of progress through a file
         self.start_i = 0
         self.stop_i = len(self.processor.timestamps) - 1
 
         if self.start_time is not None:
-            # invalid user input
-            if self.start_time > self.processor.timestamps[-1]:
-                raise ValueError('User start time is larger than all timestamps.')
-            timestamp = self.processor.timestamps[self.processor.timestamps >=
-                                                  self.start_time][0]
-            # search for start or choose first timestamp
             self.start_i = max(np.searchsorted(self.processor.timestamps,
-                                               timestamp,
+                                               self.start_time,
                                                side='right')-1, 0)
         self.start_time = self.processor.timestamps[self.start_i]
         self.current_i = self.start_i
 
         if self.stop_time is not None:
-            # invalid user input
-            if self.stop_time < self.processor.timestamps[0]:
-                raise ValueError('User stop time is less than the first timestamp.')
-            timestamp = self.processor.timestamps[self.processor.timestamps >=
-                                                  self.stop_time]
-            # user stop_time is larger than any possible timestamps
-            if timestamp.size == 0:
-                # therefore default to last timestamp
-                timestamp = self.processor.timestamps[-1]
-            else:
-                timestamp = timestamp[0]
             self.stop_i = np.searchsorted(self.processor.timestamps,
-                                          timestamp,
+                                          self.stop_time,
                                           side='right')-1
         self.stop_time = self.processor.timestamps[self.stop_i]
 
-        # invalid user input
-        if self.start_time > self.stop_time:
-            raise ValueError('User start time is larger than stop time.')
-        # no data will be processed
-        elif self.start_time == self.stop_time:
+        # this check must be done after RadClass finds dataset compatible
+        # timestamps for any user start or stop time, since they may be
+        # different than the precise input timestamp
+        # if true, no data will be processed but RadClass will continue
+        if self.start_time == self.stop_time:
             logging.info("start_time=stop_time=%d", self.start_time)
             raise RuntimeWarning('Start and Stop times used are the same, no data processed.')
 
