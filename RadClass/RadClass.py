@@ -48,7 +48,7 @@ class RadClass:
     '''
 
     def __init__(self, stride, integration, datapath, filename, analysis=None,
-                 store_data=True, cache_size=None, start_time=None,
+                 store_data=True, diff=False, cache_size=None, start_time=None,
                  stop_time=None,
                  labels={'live': '2x4x16LiveTimes',
                          'timestamps': '2x4x16Times',
@@ -58,6 +58,8 @@ class RadClass:
         self.datapath = datapath
         self.filename = filename
         self.store_data = store_data
+        self.diff = diff
+        self.diff_stride = integration / 6
 
         if cache_size is None:
             self.cache_size = self.integration
@@ -253,6 +255,21 @@ class RadClass:
                                      obj=0,
                                      values=list(self.storage.keys()),
                                      axis=1)
+            if self.diff:
+                # index all windows of length self.diff_stride into a tmp array
+                windows = [self.storage[i-self.diff_stride:self.diff_stride] for i in range(self.diff_stride-1, self.storage.shape[0])]
+                # filter out any windows without enough bckg samples
+                # i.e. beginning of spectra w/ idx < self.diff_stride
+                windows = [x for x in windows if x.shape[0] == self.diff_stride]
+                # save the smallest (by gross counts) spectra
+                # for each background window (skipping timestamp in first col)
+                bckg_spectra = [x[np.argmin(np.sum(x[:,1:], axis=1))] for x in windows]
+
+                # skipping timestamp in first col, calculate difference spectra
+                self.diff_spectra = self.storage[self.diff_stride:,1:] - np.asarray(bckg_spectra[:,1:])
+                # save final data with timestamps
+                self.diff_spectra = np.c_[bckg_spectra[:,0], bckg_spectra]
+
 
     def write(self, filename):
         '''
@@ -270,3 +287,16 @@ class RadClass:
                        X=self.storage,
                        delimiter=',',
                        header=header)
+
+        if self.diff:
+            with open('diff-'+filename, 'a') as f:
+                header = ''
+                # build/include header if file is new
+                if f.tell() == 0:
+                    header = np.append(['timestamp'],
+                                    np.arange(len(self.cache[0])).astype(str))
+                    header = ', '.join(col for col in header)
+                np.savetxt(fname=f,
+                        X=self.diff_spectra,
+                        delimiter=',',
+                        header=header)
