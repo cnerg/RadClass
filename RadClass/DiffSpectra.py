@@ -23,9 +23,26 @@ class DiffSpectra:
         windows = [x for x in windows if x.shape[0] == self.stride]
         # save the smallest (by gross counts) spectra
         # for each background window (skipping timestamp in first col)
-        bckg_spectra = [x[np.argmin(np.sum(x[:,1:], axis=1))] for x in windows]
+        bckg_spectra = [x[np.argmin(np.sum(x[:, 1:], axis=1))] for x in windows]
 
         # skipping timestamp in first col, calculate difference spectra
-        self.diff_spectra = data[self.stride:,1:] - np.asarray(bckg_spectra[:,1:])
+        self.diff_spectra = data[self.stride:, 1:] - np.asarray(bckg_spectra[:, 1:])
         # save final data with timestamps
-        self.diff_spectra = np.c_[bckg_spectra[:,0], bckg_spectra]
+        self.diff_spectra = np.c_[bckg_spectra[:, 0], bckg_spectra]
+
+    def write(self, filename):
+        '''
+        Write results to file using numpy.savetxt() method.
+        filename should include the file extension.
+        '''
+        with open(filename, 'a') as f:
+            header = ''
+            # build/include header if file is new
+            if f.tell() == 0:
+                header = np.append(['timestamp'],
+                                   np.arange(len(self.diff_spectra[0])).astype(str))
+                header = ', '.join(col for col in header)
+            np.savetxt(fname=f,
+                       X=self.diff_spectra,
+                       delimiter=',',
+                       header=header)

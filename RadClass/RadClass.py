@@ -48,8 +48,8 @@ class RadClass:
     '''
 
     def __init__(self, stride, integration, datapath, filename, analysis=None,
-                 post_analysis=None, store_data=True, diff=False,
-                 cache_size=None, start_time=None, stop_time=None,
+                 post_analysis=None, store_data=True, cache_size=None,
+                 start_time=None, stop_time=None,
                  labels={'live': '2x4x16LiveTimes',
                          'timestamps': '2x4x16Times',
                          'spectra': '2x4x16Spectra'}):
@@ -58,8 +58,6 @@ class RadClass:
         self.datapath = datapath
         self.filename = filename
         self.store_data = store_data
-        self.diff = diff
-        self.diff_stride = integration / 6
 
         if cache_size is None:
             self.cache_size = self.integration
@@ -277,16 +275,3 @@ class RadClass:
                        X=self.storage,
                        delimiter=',',
                        header=header)
-
-        if self.diff:
-            with open('diff-'+filename, 'a') as f:
-                header = ''
-                # build/include header if file is new
-                if f.tell() == 0:
-                    header = np.append(['timestamp'],
-                                    np.arange(len(self.cache[0])).astype(str))
-                    header = ', '.join(col for col in header)
-                np.savetxt(fname=f,
-                        X=self.diff_spectra,
-                        delimiter=',',
-                        header=header)
