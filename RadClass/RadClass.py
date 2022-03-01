@@ -48,8 +48,8 @@ class RadClass:
     '''
 
     def __init__(self, stride, integration, datapath, filename, analysis=None,
-                 store_data=True, diff=False, cache_size=None, start_time=None,
-                 stop_time=None,
+                 post_analysis=None, store_data=True, diff=False,
+                 cache_size=None, start_time=None, stop_time=None,
                  labels={'live': '2x4x16LiveTimes',
                          'timestamps': '2x4x16Times',
                          'spectra': '2x4x16Spectra'}):
@@ -70,8 +70,10 @@ class RadClass:
         self.stop_time = stop_time
         self.labels = labels
 
-        # analysis object that will manipulate data
+        # analysis object that will manipulate data iteratively
         self.analysis = analysis
+        # analysis object that will manipulate analyzed data
+        self.post_analysis = post_analysis
 
     def queue_file(self):
         '''
@@ -255,21 +257,9 @@ class RadClass:
                                      obj=0,
                                      values=list(self.storage.keys()),
                                      axis=1)
-            if self.diff:
-                # index all windows of length self.diff_stride into a tmp array
-                windows = [self.storage[i-self.diff_stride:self.diff_stride] for i in range(self.diff_stride-1, self.storage.shape[0])]
-                # filter out any windows without enough bckg samples
-                # i.e. beginning of spectra w/ idx < self.diff_stride
-                windows = [x for x in windows if x.shape[0] == self.diff_stride]
-                # save the smallest (by gross counts) spectra
-                # for each background window (skipping timestamp in first col)
-                bckg_spectra = [x[np.argmin(np.sum(x[:,1:], axis=1))] for x in windows]
 
-                # skipping timestamp in first col, calculate difference spectra
-                self.diff_spectra = self.storage[self.diff_stride:,1:] - np.asarray(bckg_spectra[:,1:])
-                # save final data with timestamps
-                self.diff_spectra = np.c_[bckg_spectra[:,0], bckg_spectra]
-
+            if self.post_analysis is not None:
+                self.post_analysis.run(self.storage)
 
     def write(self, filename):
         '''
