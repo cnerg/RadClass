@@ -11,8 +11,7 @@ class RadClass:
     Bulk handler class. Contains most functions needed for processing data
         stream files and pass along to an analysis object.
 
-    Attributes:
-    running: indicates whether the end of a file has been reached and thus end.
+    Inputs:
     stride: The number of seconds (which equals the number of indexes
         to advance after analyzing an integration interval. e.g. if
         stride = 3, then the next integration period will setp 3 seconds ahead.
@@ -26,11 +25,6 @@ class RadClass:
     filename: The filename for the data to be analyzed.
     TODO: Make node and filename -lists- so that multiple nodes and files
         can be processed by the same object.
-    store_data: boolean; if true, save the results to a CSV file.
-    cache_size: Optional parameter to reduce file I/O and therefore
-        increase performance. Indexes a larger selection of rows to analyze.
-        cache_size -must- be greater than integration above.
-        If not provided (None), cache_size is ignored (equals integration).
     start_time: Unix epoch timestamp, in units of seconds. All data in filename
         at and after this point will be analyzed. Useful for processing only
         a portion of a data file. Default: None, ignored.
@@ -41,15 +35,30 @@ class RadClass:
     time.mktime(datetime.datetime.strptime(x, "%m/%d/%Y %H:%M:%S").timetuple())
     Where "%m/%d/%Y %H:%M:%S" is the string format (see datetime docs).
     Requires time and datetime modules
+    store_data: boolean; if true, save the resulting data to a numpy array.
+        This array can then be written using RadClass.write(). This must be
+        True for a post_analysis object to run.
+    analysis: AnalysisParameters object (e.g. H0 or BackgroundEstimator) that
+        will run iteratively as RadClass processes data. That is, for each
+        sample, that processed data slice will be passed to the analysis object
+        using its analysis.run() method.
+    post_analysis: AnalysisParameters object (e.g. DiffSpectra) that runs with
+        all data after it has been analyzed by RadClass. That is, all data
+        rows/samples will be analyzed simultaneously using this object's
+        post_analysis.run() method.
+    cache_size: Optional parameter to reduce file I/O and therefore
+        increase performance. Indexes a larger selection of rows to analyze.
+        cache_size -must- be greater than integration above.
+        If not provided (None), cache_size is ignored (equals integration).
     labels: list of dataset name labels in this order:
         [ live_label: live dataset name in HDF5 file,
           timestamps_label: timestamps dataset name in HDF5 file,
           spectra_label: spectra dataset name in HDF5 file ]
     '''
 
-    def __init__(self, stride, integration, datapath, filename, analysis=None,
-                 post_analysis=None, store_data=True, cache_size=None,
-                 start_time=None, stop_time=None,
+    def __init__(self, stride, integration, datapath, filename, start_time=None,
+                 stop_time=None, analysis=None, post_analysis=None,
+                 store_data=True, cache_size=None,
                  labels={'live': '2x4x16LiveTimes',
                          'timestamps': '2x4x16Times',
                          'spectra': '2x4x16Spectra'}):
