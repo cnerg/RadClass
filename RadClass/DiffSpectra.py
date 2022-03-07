@@ -17,18 +17,16 @@ class DiffSpectra:
 
     def run(self, data):
         # index all windows of length self.diff_stride into a tmp array
-        windows = [data[i-self.stride:i] for i in range(self.stride-1, data.shape[0])]
-        # filter out any windows without enough bckg samples
-        # i.e. beginning of spectra w/ idx < self.diff_stride
-        windows = [x for x in windows if x.shape[0] == self.stride]
+        windows = [data[i-self.stride:i] for i in range(self.stride, data.shape[0])]
         # save the smallest (by gross counts) spectra
         # for each background window (skipping timestamp in first col)
         bckg_spectra = [x[np.argmin(np.sum(x[:, 1:], axis=1))] for x in windows]
 
         # skipping timestamp in first col, calculate difference spectra
-        self.diff_spectra = data[self.stride:, 1:] - np.asarray(bckg_spectra[:, 1:])
-        # save final data with timestamps
-        self.diff_spectra = np.c_[bckg_spectra[:, 0], bckg_spectra]
+        # for each spectrum with the bckg_spectra for the window prior to it
+        self.diff_spectra = data[self.stride:, 1:] - np.asarray(bckg_spectra)[:, 1:]
+        # save final data with timestamps from original data
+        self.diff_spectra = np.c_[data[self.stride:, 0], self.diff_spectra]
 
     def write(self, filename):
         '''

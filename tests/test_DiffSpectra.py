@@ -31,14 +31,23 @@ def test_difference():
     integration = 10
 
     # run handler script with analysis parameter
-    post_analysis = DiffSpectra()
+    # small stride since there are less data samples in test_data
+    diff_stride = 2
+    post_analysis = DiffSpectra(stride=diff_stride)
     classifier = RadClass(stride, integration, test_data.datapath,
                           test_data.filename, post_analysis=post_analysis,
                           store_data=True)
     classifier.run_all()
 
     diff_spectra = post_analysis.diff_spectra
-    print(post_analysis.diff_spectra.shape)
-    print(diff_spectra)
-    exp = np.ones_like(diff_spectra)
-    np.testing.assert_equal(diff_spectra, exp)
+    # for test_data, the minimum background will always be the first spectrum
+    # in a window (because the spectra increase 1, 2, 3, 4, etc.)
+    # therefore the diff spectra element values will always be
+    # spectra[i] - spectra[i-diff_stride]
+    # the algebra for n(n+1)/2 integrated intervals is simplified below:
+    diff_value = 3*stride**2 - integration**2 \
+        + (2*stride*integration) + stride - integration
+    exp_spectra = np.full((classifier.storage.shape[0]-diff_stride,
+                           test_data.energy_bins),
+                          diff_value/(2*test_data.livetime))
+    np.testing.assert_almost_equal(diff_spectra[:, 1:], exp_spectra)
