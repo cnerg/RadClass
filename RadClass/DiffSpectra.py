@@ -17,7 +17,7 @@ class DiffSpectra:
 
     def run(self, data):
         # index all windows of length self.diff_stride into a tmp array
-        windows = [data[i-self.stride:self.stride] for i in range(self.stride-1, data.shape[0])]
+        windows = [data[i-self.stride:i] for i in range(self.stride-1, data.shape[0])]
         # filter out any windows without enough bckg samples
         # i.e. beginning of spectra w/ idx < self.diff_stride
         windows = [x for x in windows if x.shape[0] == self.stride]
