@@ -64,3 +64,28 @@ def test_difference():
     # after the first diff_stride spectra)
     exp_ts = classifier.storage[diff_stride:, 0]
     np.testing.assert_equal(diff_spectra[:, 0], exp_ts)
+
+
+def test_write():
+    stride = 10
+    integration = 10
+    filename = 'DiffSpectra_test.csv'
+
+    # run handler script with analysis parameter
+    # small stride since there are less data samples in test_data
+    diff_stride = 2
+    post_analysis = DiffSpectra(stride=diff_stride)
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, post_analysis=post_analysis,
+                          store_data=True)
+    classifier.run_all()
+    post_analysis.write(filename)
+
+    results = np.loadtxt(filename, delimiter=',')
+    # 1 extra columns are required for timestamp
+    # expected shape is only 1D because only 1 entry is expected
+    obs = results.shape
+    exp = (classifier.storage.shape[0] - diff_stride, test_data.energy_bins+1)
+    np.testing.assert_equal(obs, exp)
+
+    os.remove(filename)
