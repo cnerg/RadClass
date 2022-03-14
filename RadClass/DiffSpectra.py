@@ -16,10 +16,14 @@ class DiffSpectra:
         self.stride = stride
 
     def run(self, data):
+        # initializing spectra, with bckg to be subtracted below
         self.diff_spectra = data[self.stride:].copy()
+        # compute all integrated count-rates
         sums = np.sum(data[:, 1:], axis=1)
         for i in range(self.diff_spectra.shape[0]):
+            # select the smallest spectrum from a window self.stride long
             bckg_spectrum = data[np.argmin(sums[i:i+self.stride])+i]
+            # subtract background from stored spectrum
             self.diff_spectra[i, 1:] -= bckg_spectrum[1:]
 
     def write(self, filename):
