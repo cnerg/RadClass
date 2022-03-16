@@ -51,8 +51,13 @@ def test_difference():
     # in a window (because the spectra increase 1, 2, 3, 4, etc.)
     # therefore the diff spectra element values will always be
     # spectra[i] - spectra[i-diff_stride]
-    # (the algebra for n(n+1)/2 integrated intervals with some diff_stride
-    # is simplified below)
+    # the counts in a given window are defined analytically for
+    # the spectral structure in test_data as:
+    # n1 = integration + diff_stride * stride
+    # n2 = integration + (diff_stride - 1) * stride
+    # n3 = integration
+    # diff_value = (n1^2 + n1) - (n2^2 + n2) - (n3^2 + n3)
+    # (the algebra is simplified below)
     diff_value = (2*diff_stride*stride**2) - stride**2 - integration**2 \
         + (2*stride*integration) + stride - integration
     exp_spectra = np.full((exp_len, test_data.energy_bins),
