@@ -75,6 +75,12 @@ class RadClass:
         '''
         Initialize a file for analysis using the load_data.py scripts.
         Collects all information and assumes it exists in the file.
+        NOTE: queue_file will include all timestamps within the range of the
+        user's start & stop, but not exceed it. e.g. if the user asks for a
+        start timestamp of 2.5, and timestamps 2 and 3 are present, then
+        3 will be chosen as the start-time so as not to include data prior
+        to the user's 2.5. Likewise, RadClass will only include data less than
+        the user's stop-time
 
         Attributes:
         processor: DataSet object responsible for indexing data from file.
@@ -86,27 +92,42 @@ class RadClass:
 
         self.processor = ds.DataSet(self.labels)
         self.processor.init_database(self.filename, self.datapath)
-        # parameters for keeping track of progress through a file
 
+        # possible invalid user input scenarios
+        # user start time is great than the last possible data timestamp
+        if self.start_time is not None and self.start_time > self.processor.timestamps[-1]:
+            raise ValueError('User start time is larger than all timestamps.')
+        # user stop time is less than the first possible timestamp
+        elif self.stop_time is not None and self.stop_time < self.processor.timestamps[0]:
+                raise ValueError('User stop time is less than the first timestamp.')
+        # user start time is greater than user stop time
+        elif self.start_time is not None and self.stop_time is not None and self.start_time > self.stop_time:
+            raise ValueError('User start time is larger than stop time.')
+
+        # parameters for keeping track of progress through a file
         self.start_i = 0
         self.stop_i = len(self.processor.timestamps) - 1
 
         if self.start_time is not None:
-            timestamp = self.processor.timestamps[self.processor.timestamps >=
-                                                  self.start_time][0]
             self.start_i = max(np.searchsorted(self.processor.timestamps,
-                                               timestamp,
+                                               self.start_time,
                                                side='right')-1, 0)
         self.start_time = self.processor.timestamps[self.start_i]
         self.current_i = self.start_i
 
         if self.stop_time is not None:
-            timestamp = self.processor.timestamps[self.processor.timestamps >=
-                                                  self.stop_time][0]
             self.stop_i = np.searchsorted(self.processor.timestamps,
-                                          timestamp,
+                                          self.stop_time,
                                           side='right')-1
         self.stop_time = self.processor.timestamps[self.stop_i]
+
+        # this check must be done after RadClass finds dataset compatible
+        # timestamps for any user start or stop time, since they may be
+        # different than the precise input timestamp
+        # if true, no data will be processed but RadClass will continue
+        if self.start_time == self.stop_time:
+            logging.info("start_time=stop_time=%d", self.start_time)
+            raise RuntimeWarning('Start and Stop times used are the same, no data processed.')
 
     def collapse_data(self, rows_idx):
         '''
@@ -206,7 +227,7 @@ class RadClass:
         # number of samples analyzed between log updates
         log_interval = max(min((self.stop_i - self.start_i)/100, 100), 10)
         running = True  # tracks whether to end analysis
-        while running:
+        while running and (self.start_i != self.stop_i):
             # print status at set intervals
             if (self.current_i - self.start_i) % log_interval == 0:
                 pbar.update(round((self.current_i - self.start_i) * inverse_dt * 100, 4))

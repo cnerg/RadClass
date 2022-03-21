@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 import numpy as np
 import pytest
 import os
@@ -207,3 +208,67 @@ def test_stop():
                                    expected,
                                    decimal=2)
     np.testing.assert_equal(len(classifier.storage), periods-1)
+
+
+def test_max_stop():
+    stride = int(test_data.timesteps/10)
+    integration = int(test_data.timesteps/10)
+    # if stop_time > last timestamp, expected default to
+    # last timestamp, run as usual
+    stop_time = timestamps[-1]+1000.0
+
+    # run handler script
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, store_data=True,
+                          stop_time=stop_time)
+    classifier.run_all()
+
+    # the resulting 1-hour observation should be:
+    #   counts * integration / live-time
+    expected = (np.full((test_data.energy_bins,),
+                        integration*(integration-1)/2) /
+                test_data.livetime)
+    results = classifier.storage[0][1:][0]
+    np.testing.assert_almost_equal(results, expected, decimal=2)
+
+
+def test_bad_start_stop():
+    stride = int(test_data.timesteps/10)
+    integration = int(test_data.timesteps/10)
+
+    # Checks if start_time > stop_time
+    start_time = timestamps[1]
+    stop_time = timestamps[0]
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, start_time=start_time,
+                          stop_time=stop_time)
+    with pytest.raises(ValueError):
+        classifier.queue_file()
+
+    # checks if start_time > last timestamp
+    start_time = timestamps[-1] + 1000.0
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, start_time=start_time)
+    with pytest.raises(ValueError):
+        classifier.queue_file()
+
+    # checks if stop_time < first timestamp
+    stop_time = timestamps[0] - 1000.0
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, stop_time=stop_time)
+    with pytest.raises(ValueError):
+        classifier.queue_file()
+
+
+def test_equal_start_stop():
+    stride = int(test_data.timesteps/10)
+    integration = int(test_data.timesteps/10)
+
+    # Checks if start_time = stop_time
+    start_time = timestamps[0]
+    stop_time = timestamps[0]
+    classifier = RadClass(stride, integration, test_data.datapath,
+                          test_data.filename, start_time=start_time,
+                          stop_time=stop_time)
+    with pytest.raises(RuntimeWarning):
+        classifier.queue_file()
