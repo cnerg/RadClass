@@ -1,10 +1,7 @@
 # For hyperopt (parameter optimization)
-# ! pip install hyperopt
 from hyperopt import STATUS_OK
-
 # sklearn models
 from sklearn import linear_model
-
 # diagnostics
 from sklearn.metrics import balanced_accuracy_score
 
