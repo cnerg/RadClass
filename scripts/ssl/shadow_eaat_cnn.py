@@ -75,7 +75,6 @@ def f_eaat(params):
     ytens = torch.LongTensor(np.append(trainy, U[:,0], axis=0))
     
     #print(xtens.shape)
-    device = torch.device('cpu')  # run on cpu, since model and data are very small
     model = Net(layer1=params['layer1'], layer2=2*params['layer1'], layer3=3*params['layer1'], kernel=params['kernel'], drop_rate=params['drop_rate'], length=xtens.shape[1])
     eaat = shadow.eaat.EAAT(model=model, alpha=params['alpha'], xi=params['xi'], eps=params['eps'])
     optimizer = optim.SGD(eaat.parameters(), lr=params['lr'], momentum=params['momentum'])
