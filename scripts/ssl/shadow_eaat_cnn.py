@@ -38,7 +38,7 @@ class Net(nn.Module):
         x = self.fc2(x)
         return x
 
-class MINOSDataset(torch.utils.data.Dataset):
+class SpectralDataset(torch.utils.data.Dataset):
     def __init__(self, trainD, labels):
         self.labels = labels
         self.trainD = trainD
@@ -81,7 +81,7 @@ def f_eaat(params):
     optimizer = optim.SGD(eaat.parameters(), lr=params['lr'], momentum=params['momentum'])
 
     # define data set object
-    MINOS_train = MINOSDataset(xtens, ytens)
+    MINOS_train = SpectralDataset(xtens, ytens)
 
     # create DataLoader object of DataSet object
     DL_DS = torch.utils.data.DataLoader(MINOS_train, batch_size=params['batch_size'], shuffle=True)
