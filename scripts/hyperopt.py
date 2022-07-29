@@ -3,11 +3,12 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 # For hyperopt (parameter optimization)
 from hyperopt import Trials, tpe, fmin
+from functools import partial
 # diagnostics
 from sklearn.metrics import confusion_matrix
 
 
-def run_hyperopt(space, model, max_evals=50, verbose=True):
+def run_hyperopt(space, model, data_dict, max_evals=50, verbose=True):
     '''
     Runs hyperparameter optimization on a model given a parameter space.
     Inputs:
@@ -27,8 +28,12 @@ def run_hyperopt(space, model, max_evals=50, verbose=True):
     '''
 
     trials = Trials()
+
+    # wrap data into objective function
+    fmin_objective = partial(model, data_dict=data_dict, device=None)
+
     # run hyperopt
-    optimizer = fmin(model, 
+    optimizer = fmin(fmin_objective, 
                      space, 
                      algo=tpe.suggest,
                      max_evals=max_evals,
