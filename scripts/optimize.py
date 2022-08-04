@@ -2,7 +2,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 # For hyperopt (parameter optimization)
-from hyperopt import Trials, tpe, fmin
+from scripts.optimize import Trials, tpe, fmin
 from functools import partial
 # diagnostics
 from sklearn.metrics import confusion_matrix

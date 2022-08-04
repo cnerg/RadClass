@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 # For hyperopt (parameter optimization)
-from hyperopt import STATUS_OK
+from scripts.optimize import STATUS_OK
 # sklearn models
 from sklearn import linear_model
 # diagnostics

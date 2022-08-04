@@ -1,10 +1,11 @@
 # For hyperopt (parameter optimization)
-from hyperopt import STATUS_OK
+from scripts.optimize import STATUS_OK
 # sklearn models
 from sklearn import linear_model
 # diagnostics
 from sklearn.metrics import balanced_accuracy_score
-from scripts.hyperopt import run_hyperopt
+from scripts.optimize import run_hyperopt
+import joblib
 
 class LogisticRegression:
     # only binary so far
@@ -48,11 +49,16 @@ class LogisticRegression:
         # supervised logistic regression
         self.model.fit(trainx, trainy)
 
-    def test(self, testx, testy=None):
+    def predict(self, testx, testy=None):
         pred = self.model.predict(testx)
 
-        acc = 0.
+        acc = None
         if testy is not None:
             acc = balanced_accuracy_score(testy, pred)
         
         return pred, acc
+
+    def save(self, filename):
+        if filename[-7:] != '.joblib':
+            filename += '.joblib'
+        joblib.dump(self, filename)
