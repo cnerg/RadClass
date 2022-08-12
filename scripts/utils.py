@@ -33,24 +33,22 @@ def run_hyperopt(space, model, data_dict, max_evals=50, verbose=True):
     fmin_objective = partial(model, data_dict=data_dict, device=None)
 
     # run hyperopt
-    optimizer = fmin(fmin_objective, 
-                     space, 
-                     algo=tpe.suggest,
-                     max_evals=max_evals,
-                     trials=trials)
+    fmin(fmin_objective,
+         space,
+         algo=tpe.suggest,
+         max_evals=max_evals,
+         trials=trials)
 
     # of all trials, find best and worst loss/accuracy from optimization
-    best = trials.results[np.argmin([r['loss'] for r in 
-        trials.results])]
-    worst = trials.results[np.argmax([r['loss'] for r in 
-        trials.results])]
-    
+    best = trials.results[np.argmin([r['loss'] for r in trials.results])]
+    worst = trials.results[np.argmax([r['loss'] for r in trials.results])]
+
     if verbose:
         print('best accuracy:', 1-best['loss'])
         print('best params:', best['params'])
         print('worst accuracy:', 1-worst['loss'])
         print('worst params:', worst['params'])
-    
+
     return best, worst
 
 
@@ -71,8 +69,8 @@ def plot_cf(testy, predy, title, filename):
     ax.set_xlabel('\nPredicted Values')
     ax.set_ylabel('Actual Values ')
 
-    ## Ticket labels - List must be in alphabetical order
-    ax.xaxis.set_ticklabels(['0(SNM)','1(other)'])
-    ax.yaxis.set_ticklabels(['0(SNM)','1(other)'])
-    ## Save the visualization of the Confusion Matrix.
+    # Ticket labels - List must be in alphabetical order
+    ax.xaxis.set_ticklabels(['0(SNM)', '1(other)'])
+    ax.yaxis.set_ticklabels(['0(SNM)', '1(other)'])
+    # Save the visualization of the Confusion Matrix.
     plt.savefig(filename)
