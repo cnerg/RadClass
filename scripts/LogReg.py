@@ -8,12 +8,14 @@ from scripts.utils import run_hyperopt
 import joblib
 
 
-class LogisticRegression:
+class LogReg:
     '''
-    Methods for deploying logistic regression with hyperparameter optimization.
+    Methods for deploying sklearn's logistic regression
+    implementation with hyperparameter optimization.
     Data agnostic (i.e. user supplied data inputs).
     TODO: Currently only supports binary classification.
         Add multinomial functions and unit tests.
+        Add functionality for regression(?)
     Inputs:
     params: dictionary of logistic regression input functions.
         keys max_iter, tol, and C supported.
@@ -59,23 +61,23 @@ class LogisticRegression:
         testy = data_dict['testy']
 
         # supervised logistic regression
-        clr = linear_model.LogisticRegression(
+        clf = linear_model.LogisticRegression(
                 random_state=self.random_state,
                 max_iter=params['max_iter'],
                 tol=params['tol'],
                 C=params['C']
               )
         # train and test model
-        clr.fit(trainx, trainy)
-        clr_pred = clr.predict(testx)
+        clf.fit(trainx, trainy)
+        clf_pred = clf.predict(testx)
         # balanced_accuracy accounts for class imbalanced data
         # could alternatively use pure accuracy for a more traditional hyperopt
-        acc = balanced_accuracy_score(testy, clr_pred)
+        acc = balanced_accuracy_score(testy, clf_pred)
 
         # loss function minimizes misclassification
         return {'loss': 1-acc,
                 'status': STATUS_OK,
-                'model': clr,
+                'model': clf,
                 'params': params,
                 'accuracy': acc}
 
