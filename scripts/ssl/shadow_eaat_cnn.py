@@ -1,6 +1,6 @@
 import numpy as np
 # For hyperopt (parameter optimization)
-from scripts.optimize import STATUS_OK
+from scripts.utils import STATUS_OK
 # torch imports
 import torch
 import torch.nn as nn
