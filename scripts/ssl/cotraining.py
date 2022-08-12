@@ -269,11 +269,11 @@ class CoTraining:
         Inputs:
         trainx: nxm feature vector/matrix for training model.
         trainy: nxk class label vector/matrix for training model.
+        Ux: feature vector/matrix like labeled trainx but unlabeled data.
         testx: feature vector/matrix used for testing the performance
             of each model at every iteration.
         testy: label vector used for testing the performance
             of each model at every iteration.
-        Ux: feature vector/matrix like labeled trainx but unlabeled data.
         n_samples: the number of instances to sample and
             predict from Ux at one time
         seed: set the random seed of training splits for reproducibility

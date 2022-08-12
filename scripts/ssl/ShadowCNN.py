@@ -13,7 +13,7 @@ import shadow.utils
 from shadow.utils import set_seed
 
 set_seed(0)
-device = torch.device('cpu')  # run on cpu, since model and data are very small
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Net(nn.Module):
     def __init__(self, layer1=32, layer2=64, layer3=128, kernel=3, drop_rate=0.1, length=1000):
