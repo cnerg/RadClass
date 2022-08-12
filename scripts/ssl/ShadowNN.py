@@ -38,7 +38,7 @@ class ShadowNN:
                                    torch.cuda.is_available() else "cpu")
         # dictionary of parameters for logistic regression model
         self.params = params
-        if self.params is None:
+        if self.params is not None:
             # assumes the input dimensions are measurements of 1000 bins
             # TODO: Abstract this for arbitrary input size
             self.eaat = shadow.eaat.EAAT(model=self.model_factory(

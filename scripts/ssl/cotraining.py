@@ -352,7 +352,7 @@ class CoTraining:
         model2_accs: the accuracy scores over training epochs for model 2
         '''
 
-        fig, ax = plt.subplots(figsize=(10, 8))
+        fig, ax = plt.subplots(figsize=(10, 8), dpi=300)
         if model1_accs is not None and model2_accs is not None:
             ax.plot(np.arange(len(model1_accs)), model1_accs, label='Model 1')
             ax.plot(np.arange(len(model2_accs)), model2_accs, label='Model 2')
