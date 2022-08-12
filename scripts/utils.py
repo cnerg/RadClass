@@ -6,6 +6,9 @@ from scripts.utils import Trials, tpe, fmin
 from functools import partial
 # diagnostics
 from sklearn.metrics import confusion_matrix
+# pca
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 
 def run_hyperopt(space, model, data_dict, max_evals=50, verbose=True):
@@ -50,6 +53,119 @@ def run_hyperopt(space, model, data_dict, max_evals=50, verbose=True):
         print('worst params:', worst['params'])
 
     return best, worst
+
+
+def pca(Lx, Ly, Ux, Uy, filename):
+    '''
+    A function for computing and plotting 2D PCA.
+    Inputs:
+    Lx: labeled feature data.
+    Ly: class labels for labeled data.
+    Ux: unlabeled feature data.
+    Uy: labels for unlabeled data (all labels should be -1).
+    filename: filename for saved plot.
+        The file must be saved with extension .joblib.
+        Added to filename if not included as input.
+    '''
+
+    plt.rcParams.update({'font.size': 20})
+    # only saving colors for binary classification with unlabeled instances
+    col_dict = {-1: 'tab:gray', 0: 'tab:orange', 1: 'tab:blue'}
+
+    pcadata = np.append(Lx, Ux, axis=0)
+    normalizer = StandardScaler()
+    x = normalizer.fit_transform(pcadata)
+    print(np.mean(pcadata), np.std(pcadata))
+    print(np.mean(x), np.std(x))
+
+    pca = PCA(n_components=2)
+    pca.fit_transform(x)
+    print(pca.explained_variance_ratio_)
+    print(pca.singular_values_)
+    print(pca.components_)
+
+    principalComponents = pca.fit_transform(x)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    ax.set_xlabel('Principal Component 1', fontsize=15)
+    ax.set_ylabel('Principal Component 2', fontsize=15)
+    for idx, color in col_dict.items():
+        indices = np.where(np.append(Ly, Uy, axis=0) == idx)[0]
+        ax.scatter(principalComponents[indices, 0],
+                   principalComponents[indices, 1],
+                   c=color,
+                   label='class '+str(idx))
+    ax.grid()
+    ax.legend()
+
+    if filename[-4:] != '.png':
+        filename += '.png'
+    fig.tight_layout()
+    fig.savefig(filename)
+
+
+def multiD_PCA(Lx, Ly, Ux, Uy, filename, n=2):
+    '''
+    A function for computing and plotting n-dimensional PCA.
+    Inputs:
+    Lx: labeled feature data.
+    Ly: class labels for labeled data.
+    Ux: unlabeled feature data.
+    Uy: labels for unlabeled data (all labels should be -1).
+    filename: filename for saved plot.
+        The file must be saved with extension .joblib.
+        Added to filename if not included as input.
+    n: number of singular values to include in PCA analysis.
+    '''
+
+    plt.rcParams.update({'font.size': 20})
+    # only saving colors for binary classification with unlabeled instances
+    col_dict = {-1: 'tab:gray', 0: 'tab:orange', 1: 'tab:blue'}
+
+    pcadata = np.append(Lx, Ux, axis=0)
+    normalizer = StandardScaler()
+    x = normalizer.fit_transform(pcadata)
+    print(np.mean(pcadata), np.std(pcadata))
+    print(np.mean(x), np.std(x))
+
+    n = 2
+    pca = PCA(n_components=n)
+    principalComponents = pca.fit_transform(x)
+    print(pca.explained_variance_ratio_)
+    print(pca.singular_values_)
+    print(pca.components_)
+
+    alph = ["A", "B", "C", "D", "E", "F", "G", "H",
+            "I", "J", "K", "L", "M", "N", "O", "P",
+            "Q", "R", "S", "T", "U", "V", "W", "X",
+            "Y", "Z"]
+    jobs = alph[:n]
+
+    fig, axes = plt.subplots(n, n, figsize=(15, 15))
+
+    for row in range(axes.shape[0]):
+        for col in range(axes.shape[1]):
+            ax = axes[row, col]
+            if row == col:
+                ax.tick_params(
+                    axis='both', which='both',
+                    bottom='off', top='off',
+                    labelbottom='off',
+                    left='off', right='off',
+                    labelleft='off'
+                )
+                ax.text(0.5, 0.5, jobs[row], horizontalalignment='center')
+            else:
+                for idx, color in col_dict.items():
+                    indices = np.where(np.append(Ly, Uy, axis=0) == idx)[0]
+                    ax.scatter(principalComponents[indices, row],
+                               principalComponents[indices, col],
+                               c=color,
+                               label='class '+str(idx))
+    fig.tight_layout()
+    if filename[-4:] != '.png':
+        filename += '.png'
+    fig.savefig(filename)
 
 
 def plot_cf(testy, predy, title, filename):
