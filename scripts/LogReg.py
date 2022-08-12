@@ -51,7 +51,7 @@ class LogReg:
             keys max_iter, tol, and C supported.
         data_dict: compact data representation with the four requisite
             data structures used for training and testing a model.
-            keys trainx, trainy, testx, testy required.
+            keys trainx, trainy, testx, and testy required.
         '''
 
         # unpack data
