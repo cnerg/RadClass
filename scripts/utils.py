@@ -2,7 +2,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 # For hyperopt (parameter optimization)
-from scripts.utils import Trials, tpe, fmin
+from hyperopt import Trials, tpe, fmin
 from functools import partial
 # diagnostics
 from sklearn.metrics import confusion_matrix
@@ -33,7 +33,7 @@ def run_hyperopt(space, model, data_dict, max_evals=50, verbose=True):
     trials = Trials()
 
     # wrap data into objective function
-    fmin_objective = partial(model, data_dict=data_dict, device=None)
+    fmin_objective = partial(model, data_dict=data_dict)
 
     # run hyperopt
     fmin(fmin_objective,
