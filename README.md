@@ -25,7 +25,13 @@ Versions 3.6-3.9 are currently supported by tests. The following Python packages
 * h5py
 * numpy
 * progressbar2
+* matplotlib
+* seaborn
 * scipy
+* sklearn
+* hyperopt
+* pytorch
+* shadow-ssml
 
 Modules can be imported from the repository directory (e.g. `from RadClass.H0 import H0`) or `RadClass` can be installed using pip:
 
