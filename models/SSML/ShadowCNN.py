@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 # For hyperopt (parameter optimization)
-from scripts.utils import STATUS_OK
+from hyperopt import STATUS_OK
 # torch imports
 import torch
 import torch.nn as nn
@@ -19,7 +19,7 @@ import joblib
 
 class Net(nn.Module):
     '''
-    Neural Network constructor .
+    Neural Network constructor.
     Also includes method for forward pass.
     nn.Module: PyTorch object for neural networks.
     Inputs:
@@ -155,11 +155,14 @@ class ShadowCNN:
                                        lr=params['lr'],
                                        momentum=params['momentum'])
         else:
+            # fixed value defaults needed by training algorithm
+            self.params = {'binning': 1, 'batch_size': 1}
             # assumes the input dimensions are measurements of 1000 bins
             # TODO: Abstract this for arbitrary input size
             self.model = Net()
             self.eaat = shadow.eaat.EAAT(model=self.model)
-            self.optimizer = optim.SGD(self.eaat.parameters())
+            self.optimizer = optim.SGD(self.eaat.parameters(),
+                                       lr=0.1, momentum=0.9)
 
     def fresh_start(self, params, data_dict):
         '''
@@ -193,7 +196,8 @@ class ShadowCNN:
         # xtens[xtens == 0.0] = torch.unique(xtens)[1]/1e10
         ytens = torch.LongTensor(np.append(trainy,
                                            np.full(shape=(Ux.shape[0],),
-                                                   axis=0)))
+                                                   fill_value=-1),
+                                           axis=0))
 
         model = Net(layer1=params['layer1'],
                     layer2=2*params['layer1'],
@@ -239,10 +243,11 @@ class ShadowCNN:
                 optimizer.step()
                 lossavg.append(loss.item())
             losscurve.append(np.nanmedian(lossavg))
-            evalcurve.append(self.predict(eaat,
-                                          testx,
-                                          testy,
-                                          params['binning']))
+            if testx is not None and testy is not None:
+                evalcurve.append(self.predict(testx,
+                                              testy,
+                                              params['binning'],
+                                              eaat))
 
         max_acc = np.max(evalcurve[-25:])
 
@@ -282,7 +287,7 @@ class ShadowCNN:
                                                                 1,
                                                                 10,
                                                                 1)),
-                         'batch_szie'   : scope.int(hp.quniform('batch_size',
+                         'batch_size'   : scope.int(hp.quniform('batch_size',
                                                                 1,
                                                                 100,
                                                                 1))
@@ -336,7 +341,8 @@ class ShadowCNN:
         # xtens[xtens == 0.0] = torch.unique(xtens)[1]/1e10
         ytens = torch.LongTensor(np.append(trainy,
                                            np.full(shape=(Ux.shape[0],),
-                                                   axis=0)))
+                                                   fill_value=-1),
+                                           axis=0))
 
         # define data set object
         dataset = SpectralDataset(xtens, ytens)
@@ -370,15 +376,16 @@ class ShadowCNN:
                 self.optimizer.step()
                 lossavg.append(loss.item())
             losscurve.append(np.nanmedian(lossavg))
-            evalcurve.append(self.predict(self.eaat,
-                                          testx,
-                                          testy,
-                                          self.params['binning']))
+            if testx is not None and testy is not None:
+                evalcurve.append(self.predict(testx,
+                                              testy,
+                                              self.params['binning'],
+                                              self.eaat))
 
         # optionally return the training accuracy if test data was provided
         return losscurve, evalcurve
 
-    def predict(self, testx, testy=None, binning=1000):
+    def predict(self, testx, testy=None, binning=1, eaat=None):
         '''
         Wrapper method for Shadow NN predict method.
         Inputs:
@@ -386,14 +393,21 @@ class ShadowCNN:
         testy: nxk class label vector/matrix for training model.
             optional: if included, the predicted classes -and-
             the resulting classification accuracy will be returned.
+        binning: int number of bins sampled in feature vector
+        model: optional input for testing a given model in hyperparameter
+            optimization rather than the class saved model.
         '''
 
-        self.eaat.eval()
+        if eaat is not None:
+            eval_model = eaat
+        else:
+            eval_model = self.eaat
+        eval_model.eval()
         y_pred, y_true = [], []
         for i, data in enumerate(torch.FloatTensor(testx.copy()[:,
                                                                 ::binning])):
             x = data.reshape((1, 1, data.shape[0])).to(self.device)
-            out = self.eaat(x)
+            out = eval_model(x)
             y_pred.extend(torch.argmax(out, 1).detach().cpu().tolist())
         acc = None
         if testy is not None:
