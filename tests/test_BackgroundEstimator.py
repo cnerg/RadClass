@@ -77,7 +77,6 @@ def test_write():
     bckg.write(ofilename=ofilename)
 
     results = np.loadtxt(fname=ofilename+'.csv', delimiter=',')
-    print(results)
 
     # the resulting observation should be:
     #   counts * integration / live-time

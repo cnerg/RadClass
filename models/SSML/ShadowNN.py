@@ -1,10 +1,13 @@
 import numpy as np
 # For hyperopt (parameter optimization)
-from scripts.utils import STATUS_OK
+from hyperopt import STATUS_OK
 # torch imports
 import torch
 # shadow imports
-import shadow
+import shadow.eaat
+import shadow.losses
+import shadow.utils
+from shadow.utils import set_seed
 # diagnostics
 from scripts.utils import run_hyperopt
 import joblib
@@ -32,7 +35,7 @@ class ShadowNN:
         # defaults to a fixed value for reproducibility
         self.random_state = random_state
         # set seeds for reproducibility
-        shadow.utils.set_seed(0)
+        set_seed(0)
         # device used for computation
         self.device = torch.device("cuda" if
                                    torch.cuda.is_available() else "cpu")
@@ -58,7 +61,8 @@ class ShadowNN:
             # assumes the input dimensions are measurements of 1000 bins
             self.eaat = shadow.eaat.EAAT(
                             model=self.model_factory()).to(self.device)
-            self.eaat_opt = torch.optim.SGD(self.eaat.parameters())
+            self.eaat_opt = torch.optim.SGD(self.eaat.parameters(),
+                                            lr=0.1, momentum=0.9)
             # unlabeled instances always have a label of "-1"
             self.xEnt = torch.nn.CrossEntropyLoss(
                             ignore_index=-1).to(self.device)
@@ -115,7 +119,8 @@ class ShadowNN:
         # xtens[xtens == 0.0] = torch.unique(xtens)[1]/1e10
         ytens = torch.LongTensor(np.append(trainy,
                                            np.full(shape=(Ux.shape[0],),
-                                                   axis=0)))
+                                                   fill_value=-1),
+                                           axis=0))
 
         n_epochs = 100
         xt = torch.Tensor(xtens).to(self.device)
@@ -226,7 +231,8 @@ class ShadowNN:
         # xtens[xtens == 0.0] = torch.unique(xtens)[1]/1e10
         ytens = torch.LongTensor(np.append(trainy,
                                            np.full(shape=(Ux.shape[0],),
-                                                   axis=0)))
+                                                   fill_value=-1),
+                                           axis=0))
 
         n_epochs = 100
         xt = torch.Tensor(xtens).to(self.device)
