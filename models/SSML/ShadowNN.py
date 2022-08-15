@@ -31,9 +31,10 @@ class ShadowNN:
     '''
 
     # only binary so far
-    def __init__(self, params=None, random_state=0):
+    def __init__(self, params=None, random_state=0, input_length=1000):
         # defaults to a fixed value for reproducibility
         self.random_state = random_state
+        self.input_length = input_length
         # set seeds for reproducibility
         set_seed(0)
         # device used for computation
@@ -45,7 +46,9 @@ class ShadowNN:
             # assumes the input dimensions are measurements of 1000 bins
             # TODO: Abstract this for arbitrary input size
             self.eaat = shadow.eaat.EAAT(model=self.model_factory(
-                                            1000//params['binning'],
+                                            int(np.ceil(
+                                                self.input_length /
+                                                params['binning'])),
                                             params['hidden_layer']),
                                          alpha=params['alpha'],
                                          xi=params['xi'],

@@ -47,7 +47,7 @@ class Net(nn.Module):
         self.conv1 = nn.Conv1d(1, layer1, kernel, 1)
         self.conv2 = nn.Conv1d(layer1, layer2, kernel, 1)
         self.dropout = nn.Dropout2d(drop_rate)
-        self.fc1 = nn.Linear(int(layer2*(length-2*(kernel-1))/2), layer3)
+        self.fc1 = nn.Linear(int(layer1*(length-(kernel))), layer3)
         # self.fc1 = nn.Linear(31744, 128)
         self.fc2 = nn.Linear(layer3, 2)
 
@@ -123,12 +123,13 @@ class ShadowCNN:
     TODO: Include functionality for manipulating other
         CNN architecture parameters in hyperparameter optimization
     random_state: int/float for reproducible intiailization.
+    length: int input length (i.e. dimensions of feature vectors)
     TODO: Add input parameter, loss_function, for the other
         loss function options available in Shadow (besides EAAT).
     '''
 
     # only binary so far
-    def __init__(self, params=None, random_state=0):
+    def __init__(self, params=None, random_state=0, length=1000):
         # defaults to a fixed value for reproducibility
         self.random_state = random_state
         # set seeds for reproducibility
@@ -146,7 +147,7 @@ class ShadowCNN:
                              layer3=3*params['layer1'],
                              kernel=params['kernel'],
                              drop_rate=params['drop_rate'],
-                             length=1000)
+                             length=np.ceil(length/params['binning']))
             self.eaat = shadow.eaat.EAAT(model=self.model,
                                          alpha=params['alpha'],
                                          xi=params['xi'],
@@ -180,7 +181,8 @@ class ShadowCNN:
             NOTE: Uy is not needed since labels for unlabeled data
             instances is not used.
         '''
-
+        
+        self.params = params
         # unpack data
         trainx = data_dict['trainx']
         trainy = data_dict['trainy']
@@ -204,7 +206,7 @@ class ShadowCNN:
                     layer3=3*params['layer1'],
                     kernel=params['kernel'],
                     drop_rate=params['drop_rate'],
-                    length=xtens.shape[1])
+                    length=np.ceil(trainx.shape[1]/params['binning']))
         eaat = shadow.eaat.EAAT(model=model,
                                 alpha=params['alpha'],
                                 xi=params['xi'],
@@ -246,7 +248,6 @@ class ShadowCNN:
             if testx is not None and testy is not None:
                 evalcurve.append(self.predict(testx,
                                               testy,
-                                              params['binning'],
                                               eaat))
 
         max_acc = np.max(evalcurve[-25:])
@@ -385,7 +386,7 @@ class ShadowCNN:
         # optionally return the training accuracy if test data was provided
         return losscurve, evalcurve
 
-    def predict(self, testx, testy=None, binning=1, eaat=None):
+    def predict(self, testx, testy=None, eaat=None):
         '''
         Wrapper method for Shadow NN predict method.
         Inputs:
@@ -404,8 +405,9 @@ class ShadowCNN:
             eval_model = self.eaat
         eval_model.eval()
         y_pred, y_true = [], []
-        for i, data in enumerate(torch.FloatTensor(testx.copy()[:,
-                                                                ::binning])):
+        for i, data in enumerate(torch.FloatTensor(
+                                    testx.copy()[:, ::self.params['binning']])
+                                 ):
             x = data.reshape((1, 1, data.shape[0])).to(self.device)
             out = eval_model(x)
             y_pred.extend(torch.argmax(out, 1).detach().cpu().tolist())
