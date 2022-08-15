@@ -1,6 +1,6 @@
 import numpy as np
 # For hyperopt (parameter optimization)
-from scripts.utils import STATUS_OK
+from hyperopt import STATUS_OK
 # sklearn models
 from sklearn import semi_supervised
 # diagnostics
