@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 # For hyperopt (parameter optimization)
-from scripts.utils import STATUS_OK
+from hyperopt import STATUS_OK
 # sklearn models
 from sklearn import linear_model
 # diagnostics
@@ -156,9 +156,9 @@ class CoTraining:
         U_lr = Ux.copy()
 
         # set the random seed of training splits for reproducibility
-        # This can be ignored by fixing params['seed'] to None
+        # This can be ignored by excluding params['seed']
         # in the hyperopt space dictionary
-        if params['seed'] is not None:
+        if 'seed' in params.keys():
             np.random.seed(params['seed'])
 
         # TODO: allow a user to specify uneven splits between the two models
@@ -192,8 +192,8 @@ class CoTraining:
                                                 slr1, slr2,
                                                 L_lr1, L_lr2,
                                                 Ly_lr1, Ly_lr2,
-                                                U_lr, testx, testy,
-                                                params['n_samples']
+                                                U_lr, params['n_samples'],
+                                                testx, testy,
                                                 )
 
         # balanced_accuracy accounts for class imbalanced data
@@ -283,7 +283,7 @@ class CoTraining:
         U_lr = Ux.copy()
 
         # set the random seed of training splits for reproducibility
-        # This can be ignored by fixing params['seed'] to None
+        # This can be ignored by excluding params['seed']
         # in the hyperopt space dictionary
         if seed is not None:
             np.random.seed(seed)
@@ -301,14 +301,14 @@ class CoTraining:
         Ly_lr1 = trainy[idx].copy()
         Ly_lr2 = trainy[~idx].copy()
 
-        self.model1, self.model2,
-        model1_accs, model2_accs = self.training_loop(
-                                        self.model1, self.model2,
-                                        L_lr1, L_lr2,
-                                        Ly_lr1, Ly_lr2,
-                                        U_lr, testx, testy,
-                                        n_samples
-                                        )
+        self.model1, self.model2, model1_accs, model2_accs = \
+            self.training_loop(
+                                self.model1, self.model2,
+                                L_lr1, L_lr2,
+                                Ly_lr1, Ly_lr2,
+                                U_lr, n_samples,
+                                testx, testy,
+                                )
 
         # optional returns if a user is interested in training diagnostics
         return model1_accs, model2_accs
