@@ -43,11 +43,28 @@ class Net(nn.Module):
         The resulting network has fixed length but the
         user can input arbitrary widths.
         '''
+
+        # default max_pool1d kernel set by Shadow MNIST example
+        # NOTE: max_pool1d sets mp_kernel = mp_stride
+        self.mp_kernel = 2
         super(Net, self).__init__()
         self.conv1 = nn.Conv1d(1, layer1, kernel, 1)
         self.conv2 = nn.Conv1d(layer1, layer2, kernel, 1)
-        self.dropout = nn.Dropout2d(drop_rate)
-        self.fc1 = nn.Linear(int(layer1*(length-(kernel))), layer3)
+        self.dropout = nn.Dropout(drop_rate)
+        # calculating the number of parameters/weights before the flattened
+        # fully-connected layer:
+        #   first, there are two convolution layers, so the output length is
+        #   the input length (feature_vector.shape[0] - 2_layers*(kernel-1))
+        #   if, in the future, more layers are desired, 2 must be adjusted
+        #   next, calculate the output of the max_pool1d layer, which is
+        #   round((conv_out - (kernel=stride - 1) - 1)/2 + 1)
+        #   finally, multiply this by the number of channels in the last
+        #   convolutional layer = layer2
+        conv_out = length-2*(kernel-1)
+        parameters = layer2*(
+                        ((conv_out - (self.mp_kernel - 1) - 1)//self.mp_kernel)
+                        + 1)
+        self.fc1 = nn.Linear(int(parameters), layer3)
         # self.fc1 = nn.Linear(31744, 128)
         self.fc2 = nn.Linear(layer3, 2)
 
@@ -63,7 +80,7 @@ class Net(nn.Module):
         x = self.conv1(x)
         x = F.relu(x)
         x = self.conv2(x)
-        x = F.max_pool1d(x, 2)
+        x = F.max_pool1d(x, self.mp_kernel)
         x = self.dropout(x)
         x = torch.flatten(x, 1)
         x = self.fc1(x)
@@ -181,7 +198,7 @@ class ShadowCNN:
             NOTE: Uy is not needed since labels for unlabeled data
             instances is not used.
         '''
-        
+
         self.params = params
         # unpack data
         trainx = data_dict['trainx']
@@ -246,11 +263,13 @@ class ShadowCNN:
                 lossavg.append(loss.item())
             losscurve.append(np.nanmedian(lossavg))
             if testx is not None and testy is not None:
-                evalcurve.append(self.predict(testx,
-                                              testy,
-                                              eaat))
+                pred, acc = self.predict(testx,
+                                         testy,
+                                         eaat)
+                evalcurve.append(acc)
 
-        max_acc = np.max(evalcurve[-25:])
+        if testx is not None and testy is not None:
+            max_acc = np.max(evalcurve[-25:])
 
         return {'loss': 1-(max_acc/100.0),
                 'status': STATUS_OK,

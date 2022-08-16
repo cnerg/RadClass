@@ -249,7 +249,8 @@ def test_ShadowNN():
     # rather than decimals
     # uninteresting test if Shadow predicts all one class
     # TODO: make the default params test meaningful
-    assert np.count_nonzero(pred == y_test) > 0
+    # NOTE: .numpy() needed because model.predict() returns a tensor
+    assert np.count_nonzero(pred.numpy() == y_test) > 0
 
     # testing hyperopt optimize methods
     space = {'hidden_layer': 10,
@@ -303,7 +304,7 @@ def test_ShadowCNN():
     Ux = normalizer.transform(Ux)
 
     params = {'layer1': 2,
-              'kernel': 2,
+              'kernel': 3,
               'alpha': 0.1,
               'xi': 1e-3,
               'eps': 1.0,
