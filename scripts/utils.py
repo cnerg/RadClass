@@ -104,7 +104,7 @@ def pca(Lx, Ly, Ux, Uy, filename):
     fig.savefig(filename)
 
 
-def multiD_PCA(Lx, Ly, Ux, Uy, filename, n=2):
+def multiD_pca(Lx, Ly, Ux, Uy, filename, n=2):
     '''
     A function for computing and plotting n-dimensional PCA.
     Inputs:

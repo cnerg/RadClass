@@ -8,6 +8,8 @@ import tests.test_data as test_data
 # hyperopt
 from hyperopt.pyll.base import scope
 from hyperopt import hp
+# testing utils
+import scripts.utils as utils
 # models
 from models.LogReg import LogReg
 from models.SSML.CoTraining import CoTraining
@@ -37,6 +39,43 @@ spectra[rejected_H0_time] = 100.0
 
 labels = np.full((spectra.shape[0],), 0)
 labels[rejected_H0_time] = 1
+
+
+def test_utils():
+    X, Ux, y, Uy = train_test_split(spectra,
+                                    labels,
+                                    test_size=0.5,
+                                    random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(X,
+                                                        y,
+                                                        test_size=0.2,
+                                                        random_state=0)
+
+    filename = 'test_pca'
+    utils.pca(X_train, y_train, Ux, np.full_like(Uy, -1), filename)
+    os.remove(filename+'.png')
+
+    filename = 'test_multiD_pca'
+    utils.multiD_pca(X_train, y_train, Ux, np.full_like(Uy, -1), filename, n=5)
+    os.remove(filename+'.png')
+
+    # normalization
+    normalizer = StandardScaler()
+    normalizer.fit(X_train)
+
+    X_train = normalizer.transform(X_train)
+    X_test = normalizer.transform(X_test)
+
+    # default behavior
+    model = LogReg(params=None, random_state=0)
+    model.train(X_train, y_train)
+
+    # testing train and predict methods
+    pred, acc = model.predict(X_test, y_test)
+
+    filename = 'test_cf'
+    utils.plot_cf(y_test, pred, title=filename, filename=filename)
+    os.remove(filename+'.png')
 
 
 def test_LogReg():
@@ -148,7 +187,8 @@ def test_CoTraining():
              'n_samples': scope.int(hp.quniform('n_samples',
                                                 1,
                                                 20,
-                                                1))
+                                                1)),
+             'seed': 0
              }
     data_dict = {'trainx': X_train,
                  'testx': X_test,
