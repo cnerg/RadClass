@@ -338,13 +338,12 @@ class CoTraining:
 
         return pred1, acc, pred2, model1_acc, model2_acc
 
-    def plot_cotraining(self, filename='lr-cotraining-learningcurves.png',
-                        model1_accs=None, model2_accs=None):
+    def plot_cotraining(self, model1_accs=None, model2_accs=None,
+                        filename='lr-cotraining-learningcurves.png'):
         '''
         Plots the training error curves for two co-training models.
-        NOTE: The user can either choose to plot what is stored in
-            the class instance by setting model#_accs=None or
-            the model#_accs can be inputted.
+        NOTE: The user must provide the curves to plot, but each curve is
+            saved by the class under self.best and self.worst models.
         Inputs:
         filename: name to store picture under.
             Must end in .png (or will be added if missing).
@@ -353,18 +352,10 @@ class CoTraining:
         '''
 
         fig, ax = plt.subplots(figsize=(10, 8), dpi=300)
-        if model1_accs is not None and model2_accs is not None:
-            ax.plot(np.arange(len(model1_accs)), model1_accs, label='Model 1')
-            ax.plot(np.arange(len(model2_accs)), model2_accs, label='Model 2')
-        else:
-            ax.plot(np.arange(len(self.best['model1_acc_history'])),
-                    self.best['model1_acc_history'],
-                    color='tab:blue',
-                    label='Model 1')
-            ax.plot(np.arange(len(self.best['model2_acc_history'])),
-                    self.best['model2_acc_history'],
-                    color='tab:orange',
-                    label='Model 2')
+        ax.plot(np.arange(len(model1_accs)), model1_accs,
+                color='tab:blue', label='Model 1')
+        ax.plot(np.arange(len(model2_accs)), model2_accs,
+                color='tab:orange', label='Model 2')
         ax.legend()
         ax.set_xlabel('Co-Training Iteration')
         ax.set_ylabel('Test Accuracy')

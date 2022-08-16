@@ -397,10 +397,10 @@ class ShadowCNN:
                 lossavg.append(loss.item())
             losscurve.append(np.nanmedian(lossavg))
             if testx is not None and testy is not None:
-                evalcurve.append(self.predict(testx,
-                                              testy,
-                                              self.params['binning'],
-                                              self.eaat))
+                pred, acc = self.predict(testx,
+                                         testy,
+                                         self.eaat)
+                evalcurve.append(acc)
 
         # optionally return the training accuracy if test data was provided
         return losscurve, evalcurve
@@ -437,13 +437,12 @@ class ShadowCNN:
 
         return y_pred, acc
 
-    def plot_cotraining(self, filename='lr-cotraining-learningcurves.png',
-                        losscurve=None, evalcurve=None):
+    def plot_training(self, losscurve=None, evalcurve=None,
+                      filename='lr-cotraining-learningcurves.png'):
         '''
         Plots the training error curves for two co-training models.
-        NOTE: The user can either choose to plot what is stored in
-            the class instance by setting curves=None or
-            the curves can be inputted.
+        NOTE: The user must provide the curves to plot, but each curve is
+            saved by the class under self.best and self.worst models.
         Inputs:
         filename: name to store picture under.
             Must end in .png (or will be added if missing).
@@ -456,12 +455,8 @@ class ShadowCNN:
                                        sharex=True,
                                        figsize=(10, 8),
                                        dpi=300)
-        if losscurve is not None and evalcurve is not None:
-            ax1.plot(losscurve)
-            ax2.plot(evalcurve)
-        else:
-            ax1.plot(self.best['losscurve'])
-            ax2.plot(self.best['evalcurve'])
+        ax1.plot(losscurve)
+        ax2.plot(evalcurve)
         ax1.set_xlabel('Epoch')
         ax2.set_xlabel('Epoch')
         ax1.set_ylabel('Loss Curve')
