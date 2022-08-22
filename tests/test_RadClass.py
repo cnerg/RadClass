@@ -152,6 +152,17 @@ def test_write():
     results = h5py.File(filename+'.h5', 'r')
     np.testing.assert_almost_equal(results[keys[1]][0], expected, decimal=2)
 
+    shape = results[keys[1]].shape
+    # close readable file
+    results.close()
+
+    # should append to written file
+    classifier.write(filename)
+    results = h5py.File(filename+'.h5', 'r')
+    # we expect the file to have twice as many lines
+    # since it was appended with the same information
+    np.testing.assert_equal(results[keys[1]].shape[0], 2*shape[0])
+
     os.remove(filename+'.h5')
 
 
