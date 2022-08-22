@@ -65,7 +65,6 @@ class Net(nn.Module):
                         ((conv_out - (self.mp_kernel - 1) - 1)//self.mp_kernel)
                         + 1)
         self.fc1 = nn.Linear(int(parameters), layer3)
-        # self.fc1 = nn.Linear(31744, 128)
         self.fc2 = nn.Linear(layer3, 2)
 
     def forward(self, x):
