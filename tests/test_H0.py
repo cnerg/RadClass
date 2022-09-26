@@ -3,7 +3,7 @@ import pytest
 import os
 from datetime import datetime, timedelta
 
-from RadClass.RadClass import RadClass
+from RadClass.Processor import Processor
 from RadClass.H0 import H0
 import tests.test_data as test_data
 
@@ -49,8 +49,8 @@ def test_gross():
 
     # run handler script with analysis parameter
     analysis = H0()
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, analysis=analysis)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, analysis=analysis)
     classifier.run_all()
 
     obs_timestamp = analysis.triggers[0][0]
@@ -69,8 +69,8 @@ def test_channel():
 
     # run handler script with analysis parameter
     analysis = H0(gross=False, energy_bins=test_data.energy_bins)
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, analysis=analysis)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, analysis=analysis)
     classifier.run_all()
 
     obs_timestamp = analysis.triggers[0][0]
@@ -94,8 +94,8 @@ def test_write_gross():
 
     # run handler script with analysis parameter
     analysis = H0()
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, analysis=analysis)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, analysis=analysis)
     classifier.run_all()
     analysis.write(filename)
 
@@ -115,8 +115,8 @@ def test_write_channel():
 
     # run handler script with analysis parameter
     analysis = H0(gross=False, energy_bins=test_data.energy_bins)
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, analysis=analysis)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, analysis=analysis)
     classifier.run_all()
     analysis.write(filename)
 

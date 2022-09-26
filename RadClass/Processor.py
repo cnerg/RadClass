@@ -7,7 +7,7 @@ import progressbar
 import RadClass.DataSet as ds
 
 
-class RadClass:
+class Processor:
     '''
     Bulk handler class. Contains most functions needed for processing data
         stream files and pass along to an analysis object.

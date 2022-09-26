@@ -38,12 +38,12 @@ RadClass is designed to be modular, allowing a user to use analysis modules as n
 ![RadClass Workflow](/images/RadClass_workflow.png)
 
 An HDF5 data file is specified as input, which is processed by `DataSet`. The user can specify a type of `AnalysisParameters`. For example, `H0` for hypothesis testing, `BackgroundEstimator` for background estimation, etc.
-`RadClass` then uses `DataSet` and the user specified `AnalysisParameters` to run, storing the results for use by the user.
-To see examples of how a user can initialize and run `RadClass`, review /tests/.
+`Processor` then uses `DataSet` and the user specified `AnalysisParameters` to run, storing the results for use by the user.
+To see examples of how a user can initialize and run `Processor`, review /tests/.
 
 ## Data Format
 
-`RadClass` expects a data structure as follows:
+`RadClass.Processor` expects a data structure as follows:
 
 ![File Structure](/images/file_structure.png)
 

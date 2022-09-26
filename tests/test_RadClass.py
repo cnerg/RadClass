@@ -1,11 +1,10 @@
-from multiprocessing.sharedctypes import Value
 import numpy as np
 import h5py
 import pytest
 import os
 from datetime import datetime, timedelta
 
-from RadClass.RadClass import RadClass
+from RadClass.Processor import Processor
 import tests.test_data as test_data
 
 # initialize sample data
@@ -40,9 +39,9 @@ def test_analysis():
     integration = int(test_data.timesteps/10)
 
     # run handler script
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, analysis=NullAnalysis(),
-                          store_data=False)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, analysis=NullAnalysis(),
+                           store_data=False)
     classifier.run_all()
 
     np.testing.assert_equal(True, classifier.analysis.changed)
@@ -55,11 +54,11 @@ def test_init():
     cache_size = 10000
     stop_time = 2e9
 
-    classifier = RadClass(stride=stride, integration=integration,
-                          datapath=test_data.datapath,
-                          filename=test_data.filename, store_data=store_data,
-                          cache_size=cache_size, stop_time=stop_time,
-                          labels=test_data.labels)
+    classifier = Processor(stride=stride, integration=integration,
+                           datapath=test_data.datapath,
+                           filename=test_data.filename, store_data=store_data,
+                           cache_size=cache_size, stop_time=stop_time,
+                           labels=test_data.labels)
 
     np.testing.assert_equal(stride, classifier.stride)
     np.testing.assert_equal(integration, classifier.integration)
@@ -75,8 +74,8 @@ def test_integration():
     integration = int(test_data.timesteps/10)
 
     # run handler script
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=True)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, store_data=True)
     classifier.run_all()
 
     # the resulting 1-hour observation should be:
@@ -94,9 +93,9 @@ def test_cache():
     cache_size = 100
 
     # run handler script
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=True,
-                          cache_size=cache_size)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, store_data=True,
+                           cache_size=cache_size)
     classifier.run_all()
 
     # the resulting 1-hour observation should be:
@@ -113,8 +112,8 @@ def test_stride():
     integration = 5
 
     # run handler script
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename)
     classifier.run_all()
 
     # the resulting 1-hour observation should be:
@@ -137,8 +136,8 @@ def test_write():
     filename = 'test_results'
 
     # run handler script
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename)
     classifier.run_all()
     classifier.write(filename)
 
@@ -184,9 +183,9 @@ def test_start():
     start_time = timestamps[integration]
 
     # run handler script
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=True,
-                          cache_size=cache_size, start_time=start_time)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, store_data=True,
+                           cache_size=cache_size, start_time=start_time)
     classifier.run_all()
 
     integration_val = (((2*integration)*(2*integration-1)/2) -
@@ -212,9 +211,9 @@ def test_stop():
     stop_time = timestamps[integration*(periods-1)+1]
 
     # run handler script
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=True,
-                          cache_size=cache_size, stop_time=stop_time)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, store_data=True,
+                           cache_size=cache_size, stop_time=stop_time)
     classifier.run_all()
 
     integration_val = (((integration*(periods-1)) *
@@ -238,9 +237,9 @@ def test_max_stop():
     stop_time = timestamps[-1]+1000.0
 
     # run handler script
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=True,
-                          stop_time=stop_time)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, store_data=True,
+                           stop_time=stop_time)
     classifier.run_all()
 
     # the resulting 1-hour observation should be:
@@ -259,23 +258,23 @@ def test_bad_start_stop():
     # Checks if start_time > stop_time
     start_time = timestamps[1]
     stop_time = timestamps[0]
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, start_time=start_time,
-                          stop_time=stop_time)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, start_time=start_time,
+                           stop_time=stop_time)
     with pytest.raises(ValueError):
         classifier.queue_file()
 
     # checks if start_time > last timestamp
     start_time = timestamps[-1] + 1000.0
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, start_time=start_time)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, start_time=start_time)
     with pytest.raises(ValueError):
         classifier.queue_file()
 
     # checks if stop_time < first timestamp
     stop_time = timestamps[0] - 1000.0
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, stop_time=stop_time)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, stop_time=stop_time)
     with pytest.raises(ValueError):
         classifier.queue_file()
 
@@ -287,8 +286,8 @@ def test_equal_start_stop():
     # Checks if start_time = stop_time
     start_time = timestamps[0]
     stop_time = timestamps[0]
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, start_time=start_time,
-                          stop_time=stop_time)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, start_time=start_time,
+                           stop_time=stop_time)
     with pytest.raises(RuntimeWarning):
         classifier.queue_file()

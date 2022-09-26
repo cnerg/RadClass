@@ -3,7 +3,7 @@ import pytest
 import os
 from datetime import datetime, timedelta
 
-from RadClass.RadClass import RadClass
+from RadClass.Processor import Processor
 from RadClass.BackgroundEstimator import BackgroundEstimator
 import tests.test_data as test_data
 
@@ -40,8 +40,8 @@ def test_estimation():
     confidence = 0.8
     bckg = BackgroundEstimator(confidence=confidence)
     # run handler script
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=True, analysis=bckg)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, store_data=True, analysis=bckg)
     classifier.run_all()
 
     bckg.estimate()
@@ -69,8 +69,8 @@ def test_write():
     confidence = 0.8
     bckg = BackgroundEstimator(confidence=confidence)
     # run handler script
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, store_data=True, analysis=bckg)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, store_data=True, analysis=bckg)
     classifier.run_all()
 
     ofilename = 'bckg_test'

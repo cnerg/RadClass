@@ -3,7 +3,7 @@ import pytest
 import os
 from datetime import datetime, timedelta
 
-from RadClass.RadClass import RadClass
+from RadClass.Processor import Processor
 from RadClass.DiffSpectra import DiffSpectra
 import tests.test_data as test_data
 
@@ -34,9 +34,9 @@ def test_difference():
     # small stride since there are less data samples in test_data
     diff_stride = 2
     post_analysis = DiffSpectra(stride=diff_stride)
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, post_analysis=post_analysis,
-                          store_data=True)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, post_analysis=post_analysis,
+                           store_data=True)
     classifier.run_all()
 
     diff_spectra = post_analysis.diff_spectra
@@ -81,9 +81,9 @@ def test_write():
     # small stride since there are less data samples in test_data
     diff_stride = 2
     post_analysis = DiffSpectra(stride=diff_stride)
-    classifier = RadClass(stride, integration, test_data.datapath,
-                          test_data.filename, post_analysis=post_analysis,
-                          store_data=True)
+    classifier = Processor(stride, integration, test_data.datapath,
+                           test_data.filename, post_analysis=post_analysis,
+                           store_data=True)
     classifier.run_all()
     post_analysis.write(filename)
 
