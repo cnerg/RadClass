@@ -143,15 +143,22 @@ def test_write():
 
     # the resulting 1-hour observation should be:
     #   counts * integration / live-time
-    expected = (np.full((test_data.energy_bins,),
+    exp_spec = (np.full((test_data.energy_bins,),
                         integration*(integration-1)/2) /
                 test_data.livetime)
-    # results array is only 1D because only one entry is expected
-    # for test_data.timesteps
+    # expect a 1D timestamps vector (shape: tuple) determined by integration
+    exp_time_shape = (test_data.timesteps // integration,)
+    # [::integration] only selects the beginning of each integration window
+    # [:exp_time_shape[0]] cuts off for whole integration windows
+    exp_timestamps = timestamps[::integration][:exp_time_shape[0]]
+
     keys = ['timestamps', 'spectra']
     results = h5py.File(filename+'.h5', 'r')
-    np.testing.assert_almost_equal(results[keys[1]][0], expected, decimal=2)
+    np.testing.assert_almost_equal(results[keys[1]][0], exp_spec, decimal=2)
+    np.testing.assert_equal(results[keys[0]].shape, exp_time_shape)
+    np.testing.assert_equal(results[keys[0]], exp_timestamps)
 
+    # test appending
     shape = results[keys[1]].shape
     # close readable file
     results.close()
