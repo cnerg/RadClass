@@ -104,59 +104,18 @@ class ShadowNN:
         # unlabeled co-training data
         Ux = data_dict['Ux']
 
-        eaat = shadow.eaat.EAAT(model=self.model_factory(
-                                    testx[:, ::params['binning']].shape[1],
-                                    params['hidden_layer']),
-                                alpha=params['alpha'],
-                                xi=params['xi'],
-                                eps=params['eps']).to(self.device)
-        eaat_opt = torch.optim.SGD(eaat.parameters(),
-                                   lr=params['lr'],
-                                   momentum=params['momentum'])
-        xEnt = torch.nn.CrossEntropyLoss(ignore_index=-1).to(self.device)
-
-        # avoid float round-off by using DoubleTensor
-        xtens = torch.FloatTensor(np.append(trainx,
-                                            Ux,
-                                            axis=0)[:, ::params['binning']])
-        # xtens[xtens == 0.0] = torch.unique(xtens)[1]/1e10
-        ytens = torch.LongTensor(np.append(trainy,
-                                           np.full(shape=(Ux.shape[0],),
-                                                   fill_value=-1),
-                                           axis=0))
-
-        n_epochs = 100
-        xt = torch.Tensor(xtens).to(self.device)
-        yt = torch.LongTensor(ytens).to(self.device)
-        # saves history for max accuracy
-        acc_history = []
-        # set the model into training mode
-        # NOTE: change this to .eval() mode for testing and back again
-        eaat.train()
-        for epoch in range(n_epochs):
-            # Forward/backward pass for training semi-supervised model
-            out = eaat(xt)
-            # supervised + unsupervised loss
-            loss = xEnt(out, yt) + eaat.get_technique_cost(xt)
-            eaat_opt.zero_grad()
-            loss.backward()
-            eaat_opt.step()
-
-            eaat.eval()
-            eaat_pred = torch.max(eaat(
-                                    torch.FloatTensor(
-                                        testx.copy()[:, ::params['binning']]
-                                        )
-                                    ), 1)[-1]
-            acc = shadow.losses.accuracy(eaat_pred,
-                                         torch.LongTensor(testy.copy())
-                                         ).data.item()
-            acc_history.append(acc)
+        clf = ShadowNN(params=params,
+                       random_state=self.random_state,
+                       input_length=testx.shape[1])
+        # training and testing
+        acc_history = clf.train(trainx, trainy, Ux, testx, testy)
+        # not used; max acc in past few epochs used instead
+        eaat_pred, acc = clf.predict(testx, testy)
         max_acc = np.max(acc_history[-20:])
 
         return {'loss': 1-(max_acc/100.0),
                 'status': STATUS_OK,
-                'model': eaat,
+                'model': clf.eaat,
                 'params': params,
                 'accuracy': (max_acc/100.0)}
 

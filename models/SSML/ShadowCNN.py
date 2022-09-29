@@ -207,72 +207,18 @@ class ShadowCNN:
         # unlabeled co-training data
         Ux = data_dict['Ux']
 
-        # avoid float round-off by using DoubleTensor
-        xtens = torch.FloatTensor(np.append(trainx,
-                                            Ux,
-                                            axis=0))[:, ::params['binning']]
-        # xtens[xtens == 0.0] = torch.unique(xtens)[1]/1e10
-        ytens = torch.LongTensor(np.append(trainy,
-                                           np.full(shape=(Ux.shape[0],),
-                                                   fill_value=-1),
-                                           axis=0))
-
-        model = Net(layer1=params['layer1'],
-                    layer2=2*params['layer1'],
-                    layer3=3*params['layer1'],
-                    kernel=params['kernel'],
-                    drop_rate=params['drop_rate'],
-                    length=np.ceil(trainx.shape[1]/params['binning']))
-        eaat = shadow.eaat.EAAT(model=model,
-                                alpha=params['alpha'],
-                                xi=params['xi'],
-                                eps=params['eps'])
-        optimizer = optim.SGD(eaat.parameters(),
-                              lr=params['lr'],
-                              momentum=params['momentum'])
-
-        # define data set object
-        dataset = SpectralDataset(xtens, ytens)
-
-        # create DataLoader object of DataSet object
-        DL_DS = torch.utils.data.DataLoader(dataset,
-                                            batch_size=params['batch_size'],
-                                            shuffle=True)
-
-        # labels for unlabeled data are always "-1"
-        xEnt = torch.nn.CrossEntropyLoss(ignore_index=-1)
-
-        n_epochs = 100
-        eaat.to(self.device)
-        losscurve = []
-        evalcurve = []
-        for epoch in range(n_epochs):
-            eaat.train()
-            lossavg = []
-            for i, (data, targets) in enumerate(DL_DS):
-                x = data.reshape((data.shape[0],
-                                  1,
-                                  data.shape[1])).to(self.device)
-                y = targets.to(self.device)
-                optimizer.zero_grad()
-                out = eaat(x)
-                loss = xEnt(out, y) + eaat.get_technique_cost(x)
-                loss.backward()
-                optimizer.step()
-                lossavg.append(loss.item())
-            losscurve.append(np.nanmedian(lossavg))
-            if testx is not None and testy is not None:
-                pred, acc = self.predict(testx,
-                                         testy,
-                                         eaat)
-                evalcurve.append(acc)
-
-        if testx is not None and testy is not None:
-            max_acc = np.max(evalcurve[-25:])
+        clf = ShadowCNN(params=params,
+                        random_state=self.random_state,
+                        length=trainx.shape[1])
+        # training and testing
+        losscurve, evalcurve = clf.train(trainx, trainy, Ux, testx, testy)
+        # not used; max acc in past few epochs used instead
+        y_pred, acc = clf.predict(testx, testy)
+        max_acc = np.max(evalcurve[-25:])
 
         return {'loss': 1-(max_acc/100.0),
                 'status': STATUS_OK,
-                'model': eaat,
+                'model': clf.eaat,
                 'params': params,
                 'losscurve': losscurve,
                 'evalcurve': evalcurve,
@@ -396,15 +342,13 @@ class ShadowCNN:
                 lossavg.append(loss.item())
             losscurve.append(np.nanmedian(lossavg))
             if testx is not None and testy is not None:
-                pred, acc = self.predict(testx,
-                                         testy,
-                                         self.eaat)
+                pred, acc = self.predict(testx, testy)
                 evalcurve.append(acc)
 
         # optionally return the training accuracy if test data was provided
         return losscurve, evalcurve
 
-    def predict(self, testx, testy=None, eaat=None):
+    def predict(self, testx, testy=None):
         '''
         Wrapper method for Shadow NN predict method.
         Inputs:
@@ -413,21 +357,15 @@ class ShadowCNN:
             optional: if included, the predicted classes -and-
             the resulting classification accuracy will be returned.
         binning: int number of bins sampled in feature vector
-        model: optional input for testing a given model in hyperparameter
-            optimization rather than the class saved model.
         '''
 
-        if eaat is not None:
-            eval_model = eaat
-        else:
-            eval_model = self.eaat
-        eval_model.eval()
+        self.eaat.eval()
         y_pred, y_true = [], []
         for i, data in enumerate(torch.FloatTensor(
                                     testx.copy()[:, ::self.params['binning']])
                                  ):
             x = data.reshape((1, 1, data.shape[0])).to(self.device)
-            out = eval_model(x)
+            out = self.eaat(x)
             y_pred.extend(torch.argmax(out, 1).detach().cpu().tolist())
         acc = None
         if testy is not None:

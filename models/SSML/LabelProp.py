@@ -72,32 +72,16 @@ class LabelProp:
         testy = data_dict['testy']
         Ux = data_dict['Ux']
 
-        # combine labeled and unlabeled instances for training
-        lp_trainx = np.append(trainx, Ux, axis=0)
-        lp_trainy = np.append(trainy,
-                              np.full(shape=(Ux.shape[0],), fill_value=-1),
-                              axis=0)
-
-        # semi-supervised label propagation
-        clf = semi_supervised.LabelPropagation(
-                kernel='knn',
-                gamma=params['gamma'],
-                n_neighbors=params['n_neighbors'],
-                max_iter=params['max_iter'],
-                tol=params['tol'],
-                n_jobs=-1
-            )
-        # train and test model
-        clf.fit(lp_trainx, lp_trainy)
-        clf_pred = clf.predict(testx)
-        # balanced_accuracy accounts for class imbalanced data
-        # could alternatively use pure accuracy for a more traditional hyperopt
-        acc = balanced_accuracy_score(testy, clf_pred)
+        clf = LabelProp(params, random_state=self.random_state)
+        # training and testing
+        clf.train(trainx, trainy, Ux)
+        # uses balanced_accuracy accounts for class imbalanced data
+        pred, acc = clf.predict(testx, testy)
 
         # loss function minimizes misclassification
         return {'loss': 1-acc,
                 'status': STATUS_OK,
-                'model': clf,
+                'model': clf.model,
                 'params': params,
                 'accuracy': acc}
 

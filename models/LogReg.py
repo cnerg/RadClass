@@ -61,23 +61,16 @@ class LogReg:
         testy = data_dict['testy']
 
         # supervised logistic regression
-        clf = linear_model.LogisticRegression(
-                random_state=self.random_state,
-                max_iter=params['max_iter'],
-                tol=params['tol'],
-                C=params['C']
-              )
+        clf = LogReg(params=params, random_state=self.random_state)
         # train and test model
-        clf.fit(trainx, trainy)
-        clf_pred = clf.predict(testx)
-        # balanced_accuracy accounts for class imbalanced data
-        # could alternatively use pure accuracy for a more traditional hyperopt
-        acc = balanced_accuracy_score(testy, clf_pred)
+        clf.train(trainx, trainy)
+        # uses balanced_accuracy accounts for class imbalanced data
+        clf_pred, acc = clf.predict(testx, testy)
 
         # loss function minimizes misclassification
         return {'loss': 1-acc,
                 'status': STATUS_OK,
-                'model': clf,
+                'model': clf.model,
                 'params': params,
                 'accuracy': acc}
 

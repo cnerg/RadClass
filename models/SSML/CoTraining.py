@@ -35,6 +35,8 @@ class CoTraining:
                             random_state=self.random_state)
             self.model2 = linear_model.LogisticRegression(
                             random_state=self.random_state)
+            # default needed for training
+            self.params = {'n_samples': 1}
         else:
             self.model1 = linear_model.LogisticRegression(
                             random_state=self.random_state,
@@ -152,60 +154,17 @@ class CoTraining:
         testy = data_dict['testy']
         # unlabeled co-training data
         Ux = data_dict['Ux']
-        # avoid overwriting when deleting in co-training loop
-        U_lr = Ux.copy()
 
-        # set the random seed of training splits for reproducibility
-        # This can be ignored by excluding params['seed']
-        # in the hyperopt space dictionary
-        if 'seed' in params.keys():
-            np.random.seed(params['seed'])
+        clf = CoTraining(params=params, random_state=self.random_state)
+        # training and testing
+        model1_accs, model2_accs = clf.train(trainx, trainy, Ux, testx, testy)
+        # uses balanced_accuracy accounts for class imbalanced data
+        pred1, acc, pred2, model1_acc, model2_acc = clf.predict(testx, testy)
 
-        # TODO: allow a user to specify uneven splits between the two models
-        split_frac = 0.5
-        # labeled training data
-        idx = np.random.choice(range(trainy.shape[0]),
-                               size=int(split_frac * trainy.shape[0]),
-                               replace=False)
-
-        # avoid overwriting when deleting in co-training loop
-        L_lr1 = trainx[idx].copy()
-        L_lr2 = trainx[~idx].copy()
-        Ly_lr1 = trainy[idx].copy()
-        Ly_lr2 = trainy[~idx].copy()
-
-        # initialized logistic regression models for a fresh-start
-        slr1 = linear_model.LogisticRegression(
-                random_state=self.random_state,
-                max_iter=params['max_iter'],
-                tol=params['tol'],
-                C=params['C']
-            )
-        slr2 = linear_model.LogisticRegression(
-                random_state=self.random_state,
-                max_iter=params['max_iter'],
-                tol=params['tol'],
-                C=params['C']
-            )
-
-        slr1, slr2, model1_accs, model2_accs = self.training_loop(
-                                                slr1, slr2,
-                                                L_lr1, L_lr2,
-                                                Ly_lr1, Ly_lr2,
-                                                U_lr, params['n_samples'],
-                                                testx, testy,
-                                                )
-
-        # balanced_accuracy accounts for class imbalanced data
-        # could alternatively use pure accuracy for a more traditional hyperopt
-        model1_acc = balanced_accuracy_score(testy, slr1.predict(testx))
-        model2_acc = balanced_accuracy_score(testy, slr2.predict(testx))
-        # select best accuracy for hyperparameter optimization
-        acc = max(model1_acc, model2_acc)
         return {'loss': 1-acc,
                 'status': STATUS_OK,
-                'model': slr1,
-                'model2': slr2,
+                'model': clf.model1,
+                'model2': clf.model2,
                 'model1_acc_history': model1_accs,
                 'model2_acc_history': model2_accs,
                 'params': params,
@@ -262,7 +221,7 @@ class CoTraining:
         self.worst = worst
 
     def train(self, trainx, trainy, Ux,
-              testx=None, testy=None, n_samples=1, seed=None):
+              testx=None, testy=None):
         '''
         Wrapper method for a basic co-training with logistic regression
         implementation training method.
@@ -274,9 +233,6 @@ class CoTraining:
             of each model at every iteration.
         testy: label vector used for testing the performance
             of each model at every iteration.
-        n_samples: the number of instances to sample and
-            predict from Ux at one time
-        seed: set the random seed of training splits for reproducibility
         '''
 
         # avoid overwriting when deleting in co-training loop
@@ -285,8 +241,8 @@ class CoTraining:
         # set the random seed of training splits for reproducibility
         # This can be ignored by excluding params['seed']
         # in the hyperopt space dictionary
-        if seed is not None:
-            np.random.seed(seed)
+        if 'seed' in self.params.keys():
+            np.random.seed(self.params['seed'])
 
         # TODO: allow a user to specify uneven splits between the two models
         split_frac = 0.5
@@ -306,7 +262,7 @@ class CoTraining:
                                 self.model1, self.model2,
                                 L_lr1, L_lr2,
                                 Ly_lr1, Ly_lr2,
-                                U_lr, n_samples,
+                                U_lr, self.params['n_samples'],
                                 testx, testy,
                                 )
 

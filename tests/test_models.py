@@ -169,7 +169,7 @@ def test_CoTraining():
 
     # default behavior
     model = CoTraining(params=None, random_state=0)
-    model.train(X_train, y_train, Ux, seed=0)
+    model.train(X_train, y_train, Ux)
 
     # testing train and predict methods
     pred, acc, *_ = model.predict(X_test, y_test)
