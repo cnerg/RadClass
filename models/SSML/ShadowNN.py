@@ -9,7 +9,7 @@ import shadow.losses
 import shadow.utils
 from shadow.utils import set_seed
 # diagnostics
-from scripts.utils import run_hyperopt
+from scripts.utils import EarlyStopper, run_hyperopt
 import joblib
 
 
@@ -199,12 +199,15 @@ class ShadowNN:
         n_epochs = 100
         xt = torch.Tensor(xtens).to(self.device)
         yt = torch.LongTensor(ytens).to(self.device)
+        # generate early-stopping watchdog
+        # TODO: allow a user of ShadowCNN to specify EarlyStopper's params
+        stopper = EarlyStopper(patience=3, min_delta=0)
         # saves history for max accuracy
         acc_history = []
-        # set the model into training mode
-        # NOTE: change this to .eval() mode for testing and back again
-        self.eaat.train()
         for epoch in range(n_epochs):
+            # set the model into training mode
+            # NOTE: change this to .eval() mode for testing and back again
+            self.eaat.train()
             # Forward/backward pass for training semi-supervised model
             out = self.eaat(xt)
             # supervised + unsupervised loss
@@ -214,19 +217,25 @@ class ShadowNN:
             self.eaat_opt.step()
 
             if testx is not None and testy is not None:
+                x_val = torch.FloatTensor(
+                            testx.copy()
+                        )[:, ::self.params['binning']].to(self.device)
+                y_val = torch.LongTensor(testy.copy()).to(self.device)
+
                 self.eaat.eval()
-                eaat_pred = torch.max(self.eaat(
-                                        torch.FloatTensor(
-                                            testx.copy()[:,
-                                                         ::self.params[
-                                                            'binning']
-                                                         ]
-                                            )
-                                        ), 1)[-1]
+                eaat_pred = torch.max(self.eaat(x_val), 1)[-1]
                 acc = shadow.losses.accuracy(eaat_pred,
-                                             torch.LongTensor(testy.copy())
+                                             y_val
                                              ).data.item()
                 acc_history.append(acc)
+
+                self.eaat.train()
+                # test for early stopping
+                out = self.eaat(x_val)
+                val_loss = self.xEnt(out, y_val) + \
+                    self.eaat.get_technique_cost(x_val)
+                if stopper.early_stop(val_loss):
+                    break
 
         # optionally return the training accuracy if test data was provided
         return acc_history
@@ -245,15 +254,18 @@ class ShadowNN:
         eaat_pred = torch.max(self.eaat(
                                 torch.FloatTensor(
                                     testx.copy()[:, ::self.params['binning']]
-                                    )
+                                    ).to(self.device)
                                 ), 1)[-1]
 
         acc = None
         if testy is not None:
             acc = shadow.losses.accuracy(eaat_pred,
-                                         torch.LongTensor(testy.copy())
+                                         torch.LongTensor(
+                                            testy.copy()).to(self.device)
                                          ).data.item()
 
+        # return tensor to cpu if on gpu and convert to numpy for return
+        eaat_pred = eaat_pred.cpu().numpy()
         return eaat_pred, acc
 
     def save(self, filename):

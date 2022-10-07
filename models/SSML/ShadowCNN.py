@@ -13,7 +13,7 @@ import shadow.losses
 import shadow.utils
 from shadow.utils import set_seed
 # diagnostics
-from scripts.utils import run_hyperopt
+from scripts.utils import EarlyStopper, run_hyperopt
 import joblib
 
 
@@ -322,6 +322,9 @@ class ShadowCNN:
         # labels for unlabeled data are always "-1"
         xEnt = torch.nn.CrossEntropyLoss(ignore_index=-1)
 
+        # generate early-stopping watchdog
+        # TODO: allow a user of ShadowCNN to specify EarlyStopper's params
+        stopper = EarlyStopper(patience=3, min_delta=0)
         n_epochs = 100
         self.eaat.to(self.device)
         losscurve = []
@@ -344,6 +347,20 @@ class ShadowCNN:
             if testx is not None and testy is not None:
                 pred, acc = self.predict(testx, testy)
                 evalcurve.append(acc)
+
+                self.eaat.train()
+                # test for early stopping
+                x_val = torch.FloatTensor(
+                                    testx.copy()[:, ::self.params['binning']])
+                x_val = x_val.reshape((x_val.shape[0],
+                                       1,
+                                       x_val.shape[1])).to(self.device)
+                y_val = torch.LongTensor(testy).to(self.device)
+                out = self.eaat(x_val)
+                val_loss = xEnt(out, y_val) + \
+                    self.eaat.get_technique_cost(x_val)
+                if stopper.early_stop(val_loss):
+                    break
 
         # optionally return the training accuracy if test data was provided
         return losscurve, evalcurve

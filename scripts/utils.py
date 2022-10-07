@@ -11,6 +11,47 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
 
+class EarlyStopper:
+    '''
+    Early stopping mechanism for neural networks.
+    Code adapted from user "isle_of_gods" from StackOverflow:
+    https://stackoverflow.com/questions/71998978/early-stopping-in-pytorch
+    Use this class to break a training loop if the validation loss is low.
+    Inputs:
+    patience: integer; forces stop if validation loss has not improved
+        for some time
+    min_delta: "fudge value" for how much loss to tolerate before stopping
+    '''
+
+    def __init__(self, patience=1, min_delta=0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.min_validation_loss = np.inf
+
+    def early_stop(self, validation_loss):
+        '''
+        Tests for the early stopping condition if the validation loss
+        has not improved for a certain period of time (patience).
+        Inputs:
+        validation_loss: typically a float value for the loss function of
+            a neural network training loop
+        '''
+
+        if validation_loss < self.min_validation_loss:
+            # keep track of the smallest validation loss
+            # if it has been beaten, restart patience
+            self.min_validation_loss = validation_loss
+            self.counter = 0
+        elif validation_loss > (self.min_validation_loss + self.min_delta):
+            # keep track of whether validation loss has been decreasing
+            # by a tolerable amount
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        return False
+
+
 def run_hyperopt(space, model, data_dict, max_evals=50, verbose=True):
     '''
     Runs hyperparameter optimization on a model given a parameter space.
