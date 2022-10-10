@@ -46,6 +46,38 @@ def test_utils():
                                     labels,
                                     test_size=0.5,
                                     random_state=0)
+    Uy = np.full_like(Uy, -1)
+
+    # test cross validation for supervised data using LogReg
+    params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
+    model = LogReg(params=params)
+    max_acc_model = utils.cross_validation(model=model,
+                                           X=X,
+                                           y=y,
+                                           params=params)
+    assert max_acc_model['accuracy'] >= 0.5
+
+    # test cross validation for supervised data and StratifiedKFold with LogReg
+    params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
+    model = LogReg(params=params)
+    max_acc_model = utils.cross_validation(model=model,
+                                           X=X,
+                                           y=y,
+                                           params=params,
+                                           stratified=True)
+    assert max_acc_model['accuracy'] >= 0.5
+
+    # test cross validation for SSML with LabelProp
+    params = {'gamma': 10, 'n_neighbors': 15, 'max_iter': 2022, 'tol': 0.5}
+    model = LabelProp(params=params)
+    max_acc_model = utils.cross_validation(model=model,
+                                           X=np.append(X, Ux, axis=0),
+                                           y=np.append(y, Uy, axis=0),
+                                           params=params,
+                                           stratified=True)
+    assert max_acc_model['accuracy'] >= 0.5
+
+    # data split for data visualization
     X_train, X_test, y_train, y_test = train_test_split(X,
                                                         y,
                                                         test_size=0.2,
