@@ -1,4 +1,5 @@
 import numpy as np
+import h5py
 import time
 import logging
 import progressbar
@@ -291,17 +292,35 @@ class RadClass:
 
     def write(self, filename):
         '''
-        Write results to file using numpy.savetxt() method.
-        filename should include the file extension.
+        Write results to file using h5py, similar to MINOS file structure.
+        filename should not include the file extension.
         '''
-        with open(filename, 'a') as f:
-            header = ''
+        with h5py.File(filename+'.h5', 'a') as f:
+            keys = ['timestamps', 'spectra']
             # build/include header if file is new
-            if f.tell() == 0:
-                header = np.append(['timestamp'],
-                                   np.arange(len(self.cache[0])).astype(str))
-                header = ', '.join(col for col in header)
-            np.savetxt(fname=f,
-                       X=self.storage,
-                       delimiter=',',
-                       header=header)
+            if len(f.keys()) == 0:
+                # only chunked datasets can be resized,
+                #  so chunks must be initialized
+                f.create_dataset(keys[0],
+                                 self.storage[:, 0].shape,
+                                 data=self.storage[:, 0],
+                                 maxshape=(None,),
+                                 chunks=self.storage[:, 0].shape,
+                                 dtype='float64')
+                f.create_dataset(keys[1],
+                                 self.storage[:, 1:].shape,
+                                 data=self.storage[:, 1:],
+                                 maxshape=(None, 1000),
+                                 chunks=self.storage[:, 1:].shape,
+                                 dtype='float64')
+            else:
+                dset1 = f[keys[0]]
+                dset2 = f[keys[1]]
+
+                dset1.resize(dset1.shape[0]+self.storage[:, 0].shape[0],
+                             axis=0)
+                dset2.resize(dset2.shape[0]+self.storage[:, 1:].shape[0],
+                             axis=0)
+
+                dset1[-self.storage[:, 0].shape[0]:] = self.storage[:, 0]
+                dset2[-self.storage[:, 1:].shape[0]:] = self.storage[:, 1:]
