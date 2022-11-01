@@ -2,5 +2,5 @@
 .pytest_cache
 __pycache__
 *.h5
-*.ipynb
+# *.ipynb
 *.csv
