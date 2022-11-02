@@ -3,7 +3,7 @@ from hyperopt import STATUS_OK
 # sklearn models
 from sklearn import linear_model
 # diagnostics
-from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import balanced_accuracy_score, precision_score, recall_score
 from scripts.utils import run_hyperopt
 import joblib
 
@@ -19,14 +19,18 @@ class LogReg:
     Inputs:
     params: dictionary of logistic regression input functions.
         keys max_iter, tol, and C supported.
+    alpha: float; weight for encouraging high recall
+    beta: float; weight for encouraging high precision
+    NOTE: if alpha=beta=0, default to favoring balanced accuracy.
     random_state: int/float for reproducible intiailization.
     '''
 
     # only binary so far
-    def __init__(self, params=None, random_state=0):
+    def __init__(self, params=None, alpha=0, beta=0, random_state=0):
         # defaults to a fixed value for reproducibility
         self.random_state = random_state
         # dictionary of parameters for logistic regression model
+        self.alpha, self.beta = alpha, beta
         self.params = params
         if self.params is None:
             self.model = linear_model.LogisticRegression(
@@ -66,31 +70,31 @@ class LogReg:
         clf.train(trainx, trainy)
         # uses balanced_accuracy accounts for class imbalanced data
         clf_pred, acc = clf.predict(testx, testy)
+        rec = recall_score(testy, clf_pred)
+        prec = precision_score(testy, clf_pred)
 
         # loss function minimizes misclassification
-        return {'loss': 1-acc,
-                'status': STATUS_OK,
-                'model': clf.model,
+        # by maximizing metrics
+        return {'score': acc+(self.alpha*rec)+(self.beta*prec),
+                'loss': (1-acc) + self.alpha*(1-rec)+self.beta*(1-prec),
+                'model': clf,
                 'params': params,
-                'accuracy': acc}
+                'accuracy': acc,
+                'precision': prec,
+                'recall': rec}
 
-    def optimize(self, space, data_dict, max_evals=50, verbose=True):
+    def optimize(self, space, data_dict, max_evals=50, njobs=4, verbose=True):
         '''
         Wrapper method for using hyperopt (see utils.run_hyperopt
         for more details). After hyperparameter optimization, results
         are stored, the best model -overwrites- self.model, and the
         best params -overwrite- self.params.
         Inputs:
-        space: a hyperopt compliant dictionary with defined optimization
+        space: a raytune compliant dictionary with defined optimization
             spaces. For example:
-                # quniform returns float, some parameters require int;
-                # use this to force int
-                space = {'max_iter': scope.int(hp.quniform('max_iter',
-                                                           10,
-                                                           10000,
-                                                           10)),
-                        'tol'      : hp.loguniform('tol', 1e-5, 1e-1),
-                        'C'        : hp.uniform('C', 0.001,1000.0)
+                space = {'max_iter': tune.quniform(10, 10000, 10),
+                        'tol'      : tune.loguniform(1e-5, 1e-1),
+                        'C'        : tune.uniform(0.001, 1000.0)
                         }
             See hyperopt docs for more information.
         data_dict: compact data representation with the four requisite
@@ -102,6 +106,9 @@ class LogReg:
             models like logistic regression typically happens well
             before 50 epochs, but can increase as more complex models,
             more hyperparameters, and a larger hyperparameter space is tested.
+        njobs: (int) number of hyperparameter training iterations to complete
+            in parallel. Default is 4, but personal computing resources may
+            require less or allow more.
         verbose: boolean. If true, print results of hyperopt.
             If false, print only the progress bar for optimization.
         '''
@@ -110,6 +117,7 @@ class LogReg:
                                    model=self.fresh_start,
                                    data_dict=data_dict,
                                    max_evals=max_evals,
+                                   njobs=njobs,
                                    verbose=verbose)
 
         # save the results of hyperparameter optimization

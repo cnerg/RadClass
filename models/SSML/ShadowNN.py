@@ -9,6 +9,7 @@ import shadow.losses
 import shadow.utils
 from shadow.utils import set_seed
 # diagnostics
+from sklearn.metrics import balanced_accuracy_score, precision_score, recall_score
 from scripts.utils import EarlyStopper, run_hyperopt
 import joblib
 
@@ -25,13 +26,16 @@ class ShadowNN:
     params: dictionary of logistic regression input functions.
         keys binning, hidden_layer, alpha, xi, eps, lr, and momentum
         are supported.
+    alpha: float; weight for encouraging high recall
+    beta: float; weight for encouraging high precision
+    NOTE: if alpha=beta=0, default to favoring balanced accuracy.
     random_state: int/float for reproducible intiailization.
     TODO: Add input parameter, loss_function, for the other
         loss function options available in Shadow (besides EAAT).
     '''
 
     # only binary so far
-    def __init__(self, params=None, random_state=0, input_length=1000):
+    def __init__(self, params=None, alpha=0, beta=0, random_state=0, input_length=1000):
         # defaults to a fixed value for reproducibility
         self.random_state = random_state
         self.input_length = input_length
@@ -40,7 +44,8 @@ class ShadowNN:
         # device used for computation
         self.device = torch.device("cuda" if
                                    torch.cuda.is_available() else "cpu")
-        # dictionary of parameters for logistic regression model
+        # dictionary of parameters for neural network model
+        self.alpha, self.beta = alpha, beta
         self.params = params
         if self.params is not None:
             # assumes the input dimensions are measurements of 1000 bins
@@ -111,38 +116,37 @@ class ShadowNN:
         acc_history = clf.train(trainx, trainy, Ux, testx, testy)
         # not used; max acc in past few epochs used instead
         eaat_pred, acc = clf.predict(testx, testy)
-        max_acc = np.max(acc_history[-20:])
+        max_acc = np.max(acc_history[-10:])
+        rec = recall_score(testy, eaat_pred)
+        prec = precision_score(testy, eaat_pred)
 
-        return {'loss': 1-(max_acc/100.0),
-                'status': STATUS_OK,
+        # loss function minimizes misclassification
+        # by maximizing metrics
+        return {'score': max_acc+(self.alpha*rec)+(self.beta*prec),
+                'loss': (1-max_acc) + self.alpha*(1-rec)+self.beta*(1-prec),
                 'model': clf.eaat,
                 'params': params,
-                'accuracy': (max_acc/100.0)}
+                'accuracy': max_acc,
+                'precision': prec,
+                'recall': rec,
+                'evalcurve': acc_history}
 
-    def optimize(self, space, data_dict, max_evals=50, verbose=True):
+    def optimize(self, space, data_dict, max_evals=50, njobs=4, verbose=True):
         '''
         Wrapper method for using hyperopt (see utils.run_hyperopt
         for more details). After hyperparameter optimization, results
         are stored, the best model -overwrites- self.model, and the
         best params -overwrite- self.params.
         Inputs:
-        space: a hyperopt compliant dictionary with defined optimization
+        space: a raytune compliant dictionary with defined optimization
             spaces. For example:
-                # quniform returns float, some parameters require int;
-                # use this to force int
-                space = {'hidden_layer' : scope.int(hp.quniform('hidden_layer',
-                                                        1000,
-                                                        10000,
-                                                        10)),
-                         'alpha'        : hp.uniform('alpha', 0.0001, 0.999),
-                         'xi'           : hp.uniform('xi', 1e-2, 1e0),
-                         'eps'          : hp.uniform('eps', 0.5, 1.5),
-                         'lr'           : hp.uniform('lr', 1e-3, 1e-1),
-                         'momentum'     : hp.uniform('momentum', 0.5, 0.99),
-                         'binning'      : scope.int(hp.quniform('binning',
-                                                                1,
-                                                                10,
-                                                                1))
+                space = {'hidden_layer' : tune.quniform(1000, 10000, 10),
+                         'alpha'        : tune.uniform(0.0001, 0.999),
+                         'xi'           : tune.uniform(1e-2, 1e0),
+                         'eps'          : tune.uniform(0.5, 1.5),
+                         'lr'           : tune.uniform(1e-3, 1e-1),
+                         'momentum'     : tune.uniform(0.5, 0.99),
+                         'binning'      : tune.quniform(1, 10, 1)
                         }
             See hyperopt docs for more information.
         data_dict: compact data representation with the five requisite
@@ -156,6 +160,9 @@ class ShadowNN:
             models like logistic regression typically happens well
             before 50 epochs, but can increase as more complex models,
             more hyperparameters, and a larger hyperparameter space is tested.
+        njobs: (int) number of hyperparameter training iterations to complete
+            in parallel. Default is 4, but personal computing resources may
+            require less or allow more.
         verbose: boolean. If true, print results of hyperopt.
             If false, print only the progress bar for optimization.
         '''
@@ -164,6 +171,7 @@ class ShadowNN:
                                    model=self.fresh_start,
                                    data_dict=data_dict,
                                    max_evals=max_evals,
+                                   njobs=njobs,
                                    verbose=verbose)
 
         # save the results of hyperparameter optimization
@@ -224,9 +232,7 @@ class ShadowNN:
 
                 self.eaat.eval()
                 eaat_pred = torch.max(self.eaat(x_val), 1)[-1]
-                acc = shadow.losses.accuracy(eaat_pred,
-                                             y_val
-                                             ).data.item()
+                acc = balanced_accuracy_score(testy, eaat_pred.cpu().numpy())
                 acc_history.append(acc)
 
                 self.eaat.train()
@@ -256,16 +262,13 @@ class ShadowNN:
                                     testx.copy()[:, ::self.params['binning']]
                                     ).to(self.device)
                                 ), 1)[-1]
+        # return tensor to cpu if on gpu and convert to numpy for return
+        eaat_pred = eaat_pred.cpu().numpy()
 
         acc = None
         if testy is not None:
-            acc = shadow.losses.accuracy(eaat_pred,
-                                         torch.LongTensor(
-                                            testy.copy()).to(self.device)
-                                         ).data.item()
+            acc = balanced_accuracy_score(testy, eaat_pred)
 
-        # return tensor to cpu if on gpu and convert to numpy for return
-        eaat_pred = eaat_pred.cpu().numpy()
         return eaat_pred, acc
 
     def save(self, filename):

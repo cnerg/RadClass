@@ -1,8 +1,10 @@
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-# For hyperopt (parameter optimization)
-from hyperopt import Trials, tpe, fmin
+# For hyperparameter optimization
+from ray import tune
+from ray.tune.search.hyperopt import HyperOptSearch
+from ray.tune.search import ConcurrencyLimiter
 from functools import partial
 # diagnostics
 from sklearn.metrics import confusion_matrix
@@ -54,7 +56,7 @@ class EarlyStopper:
         return False
 
 
-def run_hyperopt(space, model, data_dict, max_evals=50, verbose=True):
+def run_hyperopt(space, model, data_dict, max_evals=50, njobs=4, verbose=True):
     '''
     Runs hyperparameter optimization on a model given a parameter space.
     Inputs:
@@ -64,36 +66,54 @@ def run_hyperopt(space, model, data_dict, max_evals=50, verbose=True):
         and returns the optimization loss function, model, and other
         attributes (e.g. accuracy on evaluation set)
     max_eval: (int) run hyperparameter optimization for max_val iterations
+    njobs: (int) number of hyperparameter training iterations to complete
+        in parallel. Default is 4, but personal computing resources may
+        require less or allow more.
     verbose: report best and worse loss/accuracy
 
     Returns:
     best: dictionary with returns from model function, including best loss,
         best trained model, best parameters, etc.
-    worst: dictionary with returns from model function, including worst loss,
-        worst trained model, worst parameters, etc.
     '''
 
-    trials = Trials()
+    algo = HyperOptSearch()
+    algo = ConcurrencyLimiter(algo, max_concurrent=njobs)
 
     # wrap data into objective function
     fmin_objective = partial(model, data_dict=data_dict)
 
     # run hyperopt
-    fmin(fmin_objective,
-         space,
-         algo=tpe.suggest,
-         max_evals=max_evals,
-         trials=trials)
+    tuner = tune.Tuner(
+                fmin_objective,
+                param_space=space,
+                tune_config=tune.TuneConfig(num_samples=max_evals,
+                                            metric='score',
+                                            mode='max',
+                                            search_alg=algo)
+            )
+
+    results = tuner.fit()
 
     # of all trials, find best and worst loss/accuracy from optimization
-    best = trials.results[np.argmin([r['loss'] for r in trials.results])]
-    worst = trials.results[np.argmax([r['loss'] for r in trials.results])]
+    best = results.get_best_result(metric='score', mode='max').metrics
+    worst = results.get_best_result(metric='score', mode='min').metrics
 
     if verbose:
-        print('best accuracy:', 1-best['loss'])
-        print('best params:', best['params'])
-        print('worst accuracy:', 1-worst['loss'])
-        print('worst params:', worst['params'])
+        print('best metrics:')
+        print('\taccuracy:', best['accuracy'])
+        print('\tprecision:', best['precision'])
+        print('\trecall:', best['recall'])
+        print('\tscore:', best['score'])
+        print('\tparams:', best['params'])
+        print('\tmodel:', best['model'])
+
+        print('worst metrics:')
+        print('\taccuracy:', worst['accuracy'])
+        print('\tprecision:', worst['precision'])
+        print('\trecall:', worst['recall'])
+        print('\tscore:', worst['score'])
+        print('\tparams:', worst['params'])
+        print('\tmodel:', worst['model'])
 
     return best, worst
 

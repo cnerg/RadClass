@@ -30,6 +30,7 @@ Versions 3.6-3.9 are currently supported by tests. The following Python packages
 * scipy
 * sklearn
 * hyperopt
+* ray[tune]
 * torch
 * shadow-ssml
 

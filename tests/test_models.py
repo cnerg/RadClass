@@ -6,8 +6,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import tests.test_data as test_data
 # hyperopt
-from hyperopt.pyll.base import scope
-from hyperopt import hp
+from ray import tune
+# from hyperopt.pyll.base import scope
+# from hyperopt import hp
 # testing utils
 import scripts.utils as utils
 # models
@@ -142,12 +143,9 @@ def test_LogReg():
     np.testing.assert_equal(pred, y_test)
 
     # testing hyperopt optimize methods
-    space = {'max_iter': scope.int(hp.quniform('max_iter',
-                                               10,
-                                               10000,
-                                               10)),
-             'tol': hp.loguniform('tol', 1e-5, 1e-1),
-             'C': hp.uniform('C', 0.001, 1000.0)
+    space = {'max_iter': tune.quniform(10, 10000, 10),
+             'tol': tune.loguniform(1e-5, 1e-1),
+             'C': tune.uniform(0.001, 1000.0)
              }
     data_dict = {'trainx': X_train,
                  'testx': X_test,
@@ -157,7 +155,6 @@ def test_LogReg():
     model.optimize(space, data_dict, max_evals=2, verbose=True)
 
     assert model.best['accuracy'] >= model.worst['accuracy']
-    assert model.best['status'] == 'ok'
 
     # testing model write to file method
     filename = 'test_LogReg'
