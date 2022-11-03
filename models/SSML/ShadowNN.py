@@ -119,11 +119,13 @@ class ShadowNN:
         max_acc = np.max(acc_history[-10:])
         rec = recall_score(testy, eaat_pred)
         prec = precision_score(testy, eaat_pred)
+        score = max_acc+(self.alpha*rec)+(self.beta*prec)
+        loss = (1-max_acc) + self.alpha*(1-rec)+self.beta*(1-prec)
 
         # loss function minimizes misclassification
         # by maximizing metrics
-        return {'score': max_acc+(self.alpha*rec)+(self.beta*prec),
-                'loss': (1-max_acc) + self.alpha*(1-rec)+self.beta*(1-prec),
+        return {'score': score,
+                'loss': loss,
                 'model': clf.eaat,
                 'params': params,
                 'accuracy': max_acc,
@@ -140,13 +142,13 @@ class ShadowNN:
         Inputs:
         space: a raytune compliant dictionary with defined optimization
             spaces. For example:
-                space = {'hidden_layer' : tune.quniform(1000, 10000, 10),
+                space = {'hidden_layer' : tune.qrandint(1000, 10000, 10),
                          'alpha'        : tune.uniform(0.0001, 0.999),
                          'xi'           : tune.uniform(1e-2, 1e0),
                          'eps'          : tune.uniform(0.5, 1.5),
                          'lr'           : tune.uniform(1e-3, 1e-1),
                          'momentum'     : tune.uniform(0.5, 0.99),
-                         'binning'      : tune.quniform(1, 10, 1)
+                         'binning'      : tune.qrandint(1, 10, 1)
                         }
             See hyperopt docs for more information.
         data_dict: compact data representation with the five requisite

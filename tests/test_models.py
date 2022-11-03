@@ -143,7 +143,7 @@ def test_LogReg():
     np.testing.assert_equal(pred, y_test)
 
     # testing hyperopt optimize methods
-    space = {'max_iter': tune.quniform(10, 10000, 10),
+    space = {'max_iter': tune.qrandint(10, 10000, 10),
              'tol': tune.loguniform(1e-5, 1e-1),
              'C': tune.uniform(0.001, 1000.0)
              }
@@ -207,16 +207,10 @@ def test_CoTraining():
     np.testing.assert_equal(pred, y_test)
 
     # testing hyperopt optimize methods
-    space = {'max_iter': scope.int(hp.quniform('max_iter',
-                                               10,
-                                               10000,
-                                               10)),
-             'tol': hp.loguniform('tol', 1e-5, 1e-3),
-             'C': hp.uniform('C', 1.0, 1000.0),
-             'n_samples': scope.int(hp.quniform('n_samples',
-                                                1,
-                                                20,
-                                                1)),
+    space = {'max_iter': tune.qrandint(10, 10000, 10),
+             'tol': tune.loguniform(1e-5, 1e-3),
+             'C': tune.uniform(1.0, 1000.0),
+             'n_samples': tune.qrandint(1, 20, 1),
              'seed': 0
              }
     data_dict = {'trainx': X_train,
@@ -228,7 +222,6 @@ def test_CoTraining():
     model.optimize(space, data_dict, max_evals=2, verbose=True)
 
     assert model.best['accuracy'] >= model.worst['accuracy']
-    assert model.best['status'] == 'ok'
 
     # testing model plotting method
     filename = 'test_plot'
@@ -286,16 +279,10 @@ def test_LabelProp():
     assert np.count_nonzero(pred == y_test) > 0
 
     # testing hyperopt optimize methods
-    space = {'max_iter': scope.int(hp.quniform('max_iter',
-                                               10,
-                                               10000,
-                                               10)),
-             'tol': hp.loguniform('tol', 1e-6, 1e-4),
-             'gamma': hp.uniform('gamma', 1, 50),
-             'n_neighbors': scope.int(hp.quniform('n_neighbors',
-                                                  1,
-                                                  X_train.shape[0],
-                                                  1))
+    space = {'max_iter': tune.qrandint(10, 10000, 10),
+             'tol': tune.loguniform(1e-6, 1e-4),
+             'gamma': tune.uniform(1, 50),
+             'n_neighbors': tune.qrandint(1, X_train.shape[0], 1)
              }
     data_dict = {'trainx': X_train,
                  'testx': X_test,
@@ -306,7 +293,6 @@ def test_LabelProp():
     model.optimize(space, data_dict, max_evals=2, verbose=True)
 
     assert model.best['accuracy'] >= model.worst['accuracy']
-    assert model.best['status'] == 'ok'
 
     # testing model write to file method
     filename = 'test_LogReg'
@@ -375,10 +361,7 @@ def test_ShadowNN():
              'eps': 1.0,
              'lr': 0.1,
              'momentum': 0.9,
-             'binning': scope.int(hp.quniform('binning',
-                                              10,
-                                              20,
-                                              1))
+             'binning': tune.qrandint(10, 20, 1)
              }
     data_dict = {'trainx': X_train,
                  'testx': X_test,
@@ -389,7 +372,6 @@ def test_ShadowNN():
     model.optimize(space, data_dict, max_evals=2, verbose=True)
 
     assert model.best['accuracy'] >= model.worst['accuracy']
-    assert model.best['status'] == 'ok'
 
     # testing model write to file method
     filename = 'test_LogReg'
@@ -456,10 +438,7 @@ def test_ShadowCNN():
 
     # testing hyperopt optimize methods
     space = params
-    space['binning'] = scope.int(hp.quniform('binning',
-                                 10,
-                                 20,
-                                 1))
+    space['binning'] = tune.qrandint(10, 20, 1)
     data_dict = {'trainx': X_train,
                  'testx': X_test,
                  'trainy': y_train,
@@ -469,7 +448,6 @@ def test_ShadowCNN():
     model.optimize(space, data_dict, max_evals=2, verbose=True)
 
     assert model.best['accuracy'] >= model.worst['accuracy']
-    assert model.best['status'] == 'ok'
 
     # testing model plotting method
     filename = 'test_plot'

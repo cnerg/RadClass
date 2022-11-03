@@ -2,7 +2,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 # For hyperparameter optimization
-from ray import tune
+from ray import air, tune
 from ray.tune.search.hyperopt import HyperOptSearch
 from ray.tune.search import ConcurrencyLimiter
 from functools import partial
@@ -89,7 +89,7 @@ def run_hyperopt(space, model, data_dict, max_evals=50, njobs=4, verbose=True):
                 tune_config=tune.TuneConfig(num_samples=max_evals,
                                             metric='score',
                                             mode='max',
-                                            search_alg=algo)
+                                            search_alg=algo),
             )
 
     results = tuner.fit()

@@ -245,15 +245,15 @@ class ShadowCNN:
         Inputs:
         space: a raytune compliant dictionary with defined optimization
             spaces. For example:
-                space = {'layer1'       : tune.quniform(1000, 10000, 10),
-                         'kernel'       : tune.quniform(1, 9, 1),
+                space = {'layer1'       : tune.qrandint(1000, 10000, 10),
+                         'kernel'       : tune.qrandint(1, 9, 1),
                          'alpha'        : tune.uniform(0.0001, 0.999),
                          'xi'           : tune.uniform(1e-2, 1e0),
                          'eps'          : tune.uniform(0.5, 1.5),
                          'lr'           : tune.uniform(1e-3, 1e-1),
                          'momentum'     : tune.uniform(0.5, 0.99),
-                         'binning'      : tune.quniform(1, 10, 1),
-                         'batch_size'   : tune.quniform(1, 100, 1)
+                         'binning'      : tune.qrandint(1, 10, 1),
+                         'batch_size'   : tune.qrandint(1, 100, 1)
                         }
             See hyperopt docs for more information.
         data_dict: compact data representation with the five requisite
@@ -388,7 +388,7 @@ class ShadowCNN:
             y_pred.extend(torch.argmax(out, 1).detach().cpu().tolist())
         acc = None
         if testy is not None:
-            acc = balanced_accuracy_score(np.array(y_true), np.array(y_pred))
+            acc = balanced_accuracy_score(np.array(testy), np.array(y_pred))
 
         return y_pred, acc
 

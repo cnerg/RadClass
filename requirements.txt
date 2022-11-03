@@ -4,9 +4,9 @@ progressbar2
 scipy>=1.7.0
 scikit-learn
 hyperopt
-ray[tune]
 matplotlib
 seaborn
 joblib
+ray[tune]
 torch
 shadow-ssml

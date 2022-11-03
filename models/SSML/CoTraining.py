@@ -178,8 +178,8 @@ class CoTraining:
                 'model1_acc_history': model1_accs,
                 'model2_acc_history': model2_accs,
                 'accuracy': acc,
-                'precision1': prec1,
-                'recall1': rec1,
+                'precision': prec1,
+                'recall': rec1,
                 'precision2': prec2,
                 'recall2': rec2,}
 
@@ -192,10 +192,10 @@ class CoTraining:
         Inputs:
         space: a raytune compliant dictionary with defined optimization
             spaces. For example:
-                space = {'max_iter' : tune.quniform(10, 10000, 10),
+                space = {'max_iter' : tune.qrandint(10, 10000, 10),
                         'tol'       : tune.loguniform(1e-5, 1e-3),
                         'C'         : tune.uniform(1.0, 1000.0),
-                        'n_samples' : tune.quniform(1, 20, 1)
+                        'n_samples' : tune.qrandint(1, 20, 1)
                         }
             See hyperopt docs for more information.
         data_dict: compact data representation with the five requisite

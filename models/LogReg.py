@@ -92,7 +92,7 @@ class LogReg:
         Inputs:
         space: a raytune compliant dictionary with defined optimization
             spaces. For example:
-                space = {'max_iter': tune.quniform(10, 10000, 10),
+                space = {'max_iter': tune.qrandint(10, 10000, 10),
                         'tol'      : tune.loguniform(1e-5, 1e-1),
                         'C'        : tune.uniform(0.001, 1000.0)
                         }

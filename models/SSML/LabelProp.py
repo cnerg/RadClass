@@ -104,10 +104,10 @@ class LabelProp:
         Inputs:
         space: a raytune compliant dictionary with defined optimization
             spaces. For example:
-                space = {'max_iter'  : tune.quniform(10, 10000, 10),
+                space = {'max_iter'  : tune.qrandint(10, 10000, 10),
                         'tol'        : tune.loguniform(1e-6, 1e-4),
                         'gamma'      : tune.uniform(1, 50),
-                        'n_neighbors': tune.quniform(1, 200, 1)
+                        'n_neighbors': tune.qrandint(1, 200, 1)
                         }
             See hyperopt docs for more information.
         data_dict: compact data representation with the five requisite
