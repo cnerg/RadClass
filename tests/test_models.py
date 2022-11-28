@@ -1,5 +1,6 @@
 # diagnostics
 import numpy as np
+import pytest
 from datetime import datetime, timedelta
 # testing models
 from sklearn.model_selection import train_test_split
@@ -80,12 +81,13 @@ def test_utils():
                                                         random_state=0)
 
     filename = 'test_pca'
-    utils.pca(X_train, y_train, Ux, np.full_like(Uy, -1), filename)
+    pcs = utils.pca(X_train, Ux, 2)
+    utils.plot_pca(pcs, y_train, np.full_like(Uy, -1), filename, 2)
     os.remove(filename+'.png')
 
-    filename = 'test_multiD_pca'
-    utils.multiD_pca(X_train, y_train, Ux, np.full_like(Uy, -1), filename, n=5)
-    os.remove(filename+'.png')
+    # filename = 'test_multiD_pca'
+    # utils.multiD_pca(X_train, y_train, Ux, np.full_like(Uy, -1), filename, n=5)
+    # os.remove(filename+'.png')
 
     # normalization
     normalizer = StandardScaler()
@@ -108,6 +110,10 @@ def test_utils():
 
 def test_LogReg():
     # test saving model input parameters
+    # missing 'C' key
+    params = {'max_iter': 2022, 'tol': 0.5}
+    with pytest.raises(ValueError):
+        LogReg(params=params)
     params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
     model = LogReg(params=params)
 

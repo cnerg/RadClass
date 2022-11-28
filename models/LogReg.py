@@ -24,6 +24,7 @@ class LogReg:
 
     # only binary so far
     def __init__(self, params=None, random_state=0):
+        keys = ['max_iter', 'tol', 'C']
         # defaults to a fixed value for reproducibility
         self.random_state = random_state
         # dictionary of parameters for logistic regression model
@@ -33,12 +34,16 @@ class LogReg:
                             random_state=self.random_state
                         )
         else:
-            self.model = linear_model.LogisticRegression(
-                            random_state=self.random_state,
-                            max_iter=params['max_iter'],
-                            tol=params['tol'],
-                            C=params['C']
-                        )
+            if all(key in params.keys() for key in keys):
+                self.model = linear_model.LogisticRegression(
+                                random_state=self.random_state,
+                                max_iter=params['max_iter'],
+                                tol=params['tol'],
+                                C=params['C']
+                            )
+            else:
+                missing = [key for key in keys if key not in params.keys()]
+                raise ValueError('Values for {} not in params'.format(missing))
 
     def fresh_start(self, params, data_dict):
         '''

@@ -191,22 +191,14 @@ def cross_validation(model, X, y, params, n_splits=3,
     return reports[np.argmax(accs)]
 
 
-def pca(Lx, Ly, Ux, Uy, filename):
+def pca(Lx, Ux, n):
     '''
-    A function for computing and plotting 2D PCA.
+    A function for computing n-component PCA.
     Inputs:
     Lx: labeled feature data.
-    Ly: class labels for labeled data.
     Ux: unlabeled feature data.
-    Uy: labels for unlabeled data (all labels should be -1).
-    filename: filename for saved plot.
-        The file must be saved with extension .joblib.
-        Added to filename if not included as input.
+    n: number of singular values to include in PCA analysis.
     '''
-
-    plt.rcParams.update({'font.size': 20})
-    # only saving colors for binary classification with unlabeled instances
-    col_dict = {-1: 'tab:gray', 0: 'tab:orange', 1: 'tab:blue'}
 
     pcadata = np.append(Lx, Ux, axis=0)
     normalizer = StandardScaler()
@@ -214,7 +206,7 @@ def pca(Lx, Ly, Ux, Uy, filename):
     print(np.mean(pcadata), np.std(pcadata))
     print(np.mean(x), np.std(x))
 
-    pca = PCA(n_components=2)
+    pca = PCA(n_components=n)
     pca.fit_transform(x)
     print(pca.explained_variance_ratio_)
     print(pca.singular_values_)
@@ -222,31 +214,37 @@ def pca(Lx, Ly, Ux, Uy, filename):
 
     principalComponents = pca.fit_transform(x)
 
-    fig, ax = plt.subplots(figsize=(10, 8))
-    ax.set_xlabel('Principal Component 1', fontsize=15)
-    ax.set_ylabel('Principal Component 2', fontsize=15)
+    return principalComponents
+
+
+def _plot_pca_data(principalComponents, Ly, Uy, ax):
+    '''
+    Helper function for plot_pca that plots data for a given axis.
+    Inputs:
+    principalComponents: ndarray of shape (n_samples, n_components).
+    Ly: class labels for labeled data.
+    Uy: labels for unlabeled data (all labels should be -1).
+    ax: matplotlib-axis to plot on.
+    '''
+
+    # only saving colors for binary classification with unlabeled instances
+    col_dict = {-1: 'tab:gray', 0: 'tab:orange', 1: 'tab:blue'}
+
     for idx, color in col_dict.items():
         indices = np.where(np.append(Ly, Uy, axis=0) == idx)[0]
         ax.scatter(principalComponents[indices, 0],
                    principalComponents[indices, 1],
                    c=color,
                    label='class '+str(idx))
-    ax.grid()
-    ax.legend()
-
-    if filename[-4:] != '.png':
-        filename += '.png'
-    fig.tight_layout()
-    fig.savefig(filename)
+    return ax
 
 
-def multiD_pca(Lx, Ly, Ux, Uy, filename, n=2):
+def plot_pca(principalComponents, Ly, Uy, filename, n=2):
     '''
     A function for computing and plotting n-dimensional PCA.
     Inputs:
-    Lx: labeled feature data.
+    principalComponents: ndarray of shape (n_samples, n_components).
     Ly: class labels for labeled data.
-    Ux: unlabeled feature data.
     Uy: labels for unlabeled data (all labels should be -1).
     filename: filename for saved plot.
         The file must be saved with extension .joblib.
@@ -255,21 +253,6 @@ def multiD_pca(Lx, Ly, Ux, Uy, filename, n=2):
     '''
 
     plt.rcParams.update({'font.size': 20})
-    # only saving colors for binary classification with unlabeled instances
-    col_dict = {-1: 'tab:gray', 0: 'tab:orange', 1: 'tab:blue'}
-
-    pcadata = np.append(Lx, Ux, axis=0)
-    normalizer = StandardScaler()
-    x = normalizer.fit_transform(pcadata)
-    print(np.mean(pcadata), np.std(pcadata))
-    print(np.mean(x), np.std(x))
-
-    n = 2
-    pca = PCA(n_components=n)
-    principalComponents = pca.fit_transform(x)
-    print(pca.explained_variance_ratio_)
-    print(pca.singular_values_)
-    print(pca.components_)
 
     alph = ["A", "B", "C", "D", "E", "F", "G", "H",
             "I", "J", "K", "L", "M", "N", "O", "P",
@@ -277,30 +260,36 @@ def multiD_pca(Lx, Ly, Ux, Uy, filename, n=2):
             "Y", "Z"]
     jobs = alph[:n]
 
-    fig, axes = plt.subplots(n, n, figsize=(15, 15))
+    # only one plot is needed for n=2
+    if n == 2:
+        fig, ax = plt.subplots(figsize=(10, 8))
+        ax.set_xlabel('PC '+jobs[0], fontsize=15)
+        ax.set_ylabel('PC '+jobs[1], fontsize=15)
+        ax = _plot_pca_data(principalComponents, Ly, Uy, ax)
+        ax.grid()
+        ax.legend()
+    else:
+        fig, axes = plt.subplots(n, n, figsize=(15, 15))
+        for row in range(axes.shape[0]):
+            for col in range(axes.shape[1]):
+                ax = axes[row, col]
+                # blank label plot
+                if row == col:
+                    ax.tick_params(
+                        axis='both', which='both',
+                        bottom='off', top='off',
+                        labelbottom='off',
+                        left='off', right='off',
+                        labelleft='off'
+                    )
+                    ax.text(0.5, 0.5, jobs[row], horizontalalignment='center')
+                # PCA results
+                else:
+                    ax = _plot_pca_data(principalComponents, Ly, Uy, ax)
 
-    for row in range(axes.shape[0]):
-        for col in range(axes.shape[1]):
-            ax = axes[row, col]
-            if row == col:
-                ax.tick_params(
-                    axis='both', which='both',
-                    bottom='off', top='off',
-                    labelbottom='off',
-                    left='off', right='off',
-                    labelleft='off'
-                )
-                ax.text(0.5, 0.5, jobs[row], horizontalalignment='center')
-            else:
-                for idx, color in col_dict.items():
-                    indices = np.where(np.append(Ly, Uy, axis=0) == idx)[0]
-                    ax.scatter(principalComponents[indices, row],
-                               principalComponents[indices, col],
-                               c=color,
-                               label='class '+str(idx))
-    fig.tight_layout()
     if filename[-4:] != '.png':
         filename += '.png'
+    fig.tight_layout()
     fig.savefig(filename)
 
 
@@ -315,14 +304,19 @@ def plot_cf(testy, predy, title, filename):
     '''
 
     cf_matrix = confusion_matrix(testy, predy)
-    ax = sns.heatmap(cf_matrix, annot=True, cmap='Blues')
+    fig, ax = plt.subplots(figsize=(10, 8))
+    ax = sns.heatmap(cf_matrix, annot=True, cmap='Blues',
+                     vmin=0, vmax=100, ax=ax, annot_kws={'fontsize': 40})
+    # increase fontsize on colorbar
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=25)
 
-    ax.set_title(title)
-    ax.set_xlabel('\nPredicted Values')
-    ax.set_ylabel('Actual Values ')
+    ax.set_title(title, fontsize=30)
+    ax.set_xlabel('\nPredicted Values', fontsize=25)
+    ax.set_ylabel('Actual Values ', fontsize=25)
 
     # Ticket labels - List must be in alphabetical order
-    ax.xaxis.set_ticklabels(['0(SNM)', '1(other)'])
-    ax.yaxis.set_ticklabels(['0(SNM)', '1(other)'])
+    ax.xaxis.set_ticklabels(['0(SNM)', '1(other)'], fontsize=25)
+    ax.yaxis.set_ticklabels(['0(SNM)', '1(other)'], fontsize=25)
     # Save the visualization of the Confusion Matrix.
     plt.savefig(filename)
