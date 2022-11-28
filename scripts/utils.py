@@ -49,9 +49,7 @@ class EarlyStopper:
             # keep track of whether validation loss has been decreasing
             # by a tolerable amount
             self.counter += 1
-            if self.counter >= self.patience:
-                return True
-        return False
+        return self.counter >= self.patience
 
 
 def run_hyperopt(space, model, data_dict, max_evals=50, verbose=True):
