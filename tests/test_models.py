@@ -38,7 +38,7 @@ labels = np.full((spectra.shape[0],), 0)
 labels[rejected_H0_time] = 1
 
 
-def test_utils():
+def test_cross_validation():
     X, Ux, y, Uy = train_test_split(spectra,
                                     labels,
                                     test_size=0.5,
@@ -74,6 +74,13 @@ def test_utils():
     #                                        stratified=True)
     # assert max_acc_model['accuracy'] >= 0.5
 
+def test_pca():
+    # unlabeled data split
+    X, Ux, y, Uy = train_test_split(spectra,
+                                    labels,
+                                    test_size=0.5,
+                                    random_state=0)
+    Uy = np.full_like(Uy, -1)
     # data split for data visualization
     X_train, X_test, y_train, y_test = train_test_split(X,
                                                         y,
