@@ -159,7 +159,10 @@ def test_LogReg():
     # testing train and predict methods
     pred, acc = model.predict(X_test, y_test)
 
-    assert acc > 0.7
+    # since the test data used here is synthetic/toy data (i.e. uninteresting),
+    # the trained model should be at least better than a 50-50 guess
+    # if it was worse, something would be wrong with the ML class
+    assert acc > 0.5
 
     # testing hyperopt optimize methods
     space = {'max_iter': scope.int(hp.quniform('max_iter',
@@ -176,6 +179,8 @@ def test_LogReg():
                  }
     model.optimize(space, data_dict, max_evals=2, verbose=True)
 
+    # again, the data does not guarantee that an improvement will be found
+    # from hyperopt, so long as something is not wrong with the class
     assert model.best['accuracy'] >= model.worst['accuracy']
     assert model.best['status'] == 'ok'
 
