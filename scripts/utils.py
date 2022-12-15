@@ -97,7 +97,7 @@ def run_hyperopt(space, model, data_dict, max_evals=50, verbose=True):
 
 
 def cross_validation(model, X, y, params, n_splits=3,
-                     stratified=False, random_state=None):
+                     stratified=False, random_state=None, shuffle=True):
     '''
     Perform K-Fold cross validation using sklearn and a given model.
     The model *must* have a fresh_start method (see models in RadClass/models).
@@ -139,6 +139,7 @@ def cross_validation(model, X, y, params, n_splits=3,
     stratified: bool; if True, balance the K-Folds to have roughly the same
         proportion of samples from each class.
     random_state: seed for reproducility.
+    shuffle: bool; if True, shuffle the data before conducting K-folds.
     '''
 
     # return lists
@@ -147,10 +148,10 @@ def cross_validation(model, X, y, params, n_splits=3,
 
     if stratified:
         cv = StratifiedKFold(n_splits=n_splits, random_state=random_state,
-                             shuffle=True)
+                             shuffle=shuffle)
     else:
         cv = KFold(n_splits=n_splits, random_state=random_state,
-                   shuffle=True)
+                   shuffle=shuffle)
 
     # separate unlabeled data if included
     Ux = None
@@ -186,7 +187,7 @@ def cross_validation(model, X, y, params, n_splits=3,
     print('Max accuracy:', np.max(accs))
     print('All accuracy:', accs)
     # return the results of fresh_start for the max accuracy model
-    return reports[np.argmax(accs)]
+    return reports
 
 
 def pca(Lx, Ux, n):

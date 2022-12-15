@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 # testing models
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.datasets import make_classification
 import tests.test_data as test_data
 # hyperopt
 from hyperopt.pyll.base import scope
@@ -17,54 +18,64 @@ from models.LogReg import LogReg
 import joblib
 import os
 
-# initialize sample data
-start_date = datetime(2019, 2, 2)
-delta = timedelta(seconds=1)
-timestamps = np.arange(start_date,
-                       start_date + (test_data.timesteps * delta),
-                       delta).astype('datetime64[s]').astype('float64')
 
-live = np.full((len(timestamps),), test_data.livetime)
-sample_val = 1.0
-spectra = np.full((len(timestamps), test_data.energy_bins),
-                  np.full((1, test_data.energy_bins), sample_val))
-# setting up for rejected null hypothesis
-rejected_H0_time = np.random.choice(spectra.shape[0],
-                                    test_data.timesteps//2,
-                                    replace=False)
-spectra[rejected_H0_time] = 100.0
+@pytest.fixture(scope='module', autouse=True)
+def data_init():
+    # initialize sample data
+    start_date = datetime(2019, 2, 2)
+    delta = timedelta(seconds=1)
+    pytest.timestamps = np.arange(start_date,
+                                  start_date + (test_data.timesteps * delta),
+                                  delta
+                                  ).astype('datetime64[s]').astype('float64')
 
-labels = np.full((spectra.shape[0],), 0)
-labels[rejected_H0_time] = 1
+    pytest.live = np.full((len(pytest.timestamps),), test_data.livetime)
+    # 4/5 of the data will be separable
+    spectra_sep, labels_sep = make_classification(
+                                n_samples=int(0.8*len(pytest.timestamps)),
+                                n_features=test_data.energy_bins,
+                                n_informative=test_data.energy_bins,
+                                n_redundant=0,
+                                n_classes=2,
+                                class_sep=10.0)
+    # 1/5 of the data will be much less separable
+    spectra_unsep, labels_unsep = make_classification(
+                                    n_samples=int(0.2*len(pytest.timestamps)),
+                                    n_features=test_data.energy_bins,
+                                    n_informative=test_data.energy_bins,
+                                    n_redundant=0,
+                                    n_classes=2,
+                                    class_sep=0.5)
+    pytest.spectra = np.append(spectra_sep, spectra_unsep, axis=0)
+    pytest.labels = np.append(labels_sep, labels_unsep, axis=0)
 
 
 def test_cross_validation():
-    X, Ux, y, Uy = train_test_split(spectra,
-                                    labels,
-                                    test_size=0.5,
-                                    random_state=0)
-    Uy = np.full_like(Uy, -1)
-
     # test cross validation for supervised data using LogReg
     params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
     model = LogReg(params=params)
-    max_acc_model = utils.cross_validation(model=model,
-                                           X=X,
-                                           y=y,
-                                           params=params)
-    assert max_acc_model['accuracy'] >= 0.5
+    results = utils.cross_validation(model=model,
+                                     X=pytest.spectra,
+                                     y=pytest.labels,
+                                     params=params,
+                                     n_splits=5,
+                                     shuffle=False)
+    accs = [res['accuracy'] for res in results]
+    # the last K-fold will use the unseparable data for testing
+    # therefore its accuracy should be less than all other folds
+    assert (accs[-1] < accs[:-1]).all()
 
     # test cross validation for supervised data and StratifiedKFold with LogReg
-    params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
-    model = LogReg(params=params)
-    max_acc_model = utils.cross_validation(model=model,
-                                           X=X,
-                                           y=y,
-                                           params=params,
-                                           stratified=True)
-    assert max_acc_model['accuracy'] >= 0.5
+    # params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
+    # model = LogReg(params=params)
+    # max_acc_model = utils.cross_validation(model=model,
+    #                                        X=X,
+    #                                        y=y,
+    #                                        params=params,
+    #                                        stratified=True)
+    # assert max_acc_model['accuracy'] >= 0.5
 
-    # # test cross validation for SSML with LabelProp
+    # test cross validation for SSML with LabelProp
     # params = {'gamma': 10, 'n_neighbors': 15, 'max_iter': 2022, 'tol': 0.5}
     # model = LabelProp(params=params)
     # max_acc_model = utils.cross_validation(model=model,
@@ -74,10 +85,11 @@ def test_cross_validation():
     #                                        stratified=True)
     # assert max_acc_model['accuracy'] >= 0.5
 
+
 def test_pca():
     # unlabeled data split
-    X, Ux, y, Uy = train_test_split(spectra,
-                                    labels,
+    X, Ux, y, Uy = train_test_split(pytest.spectra,
+                                    pytest.labels,
                                     test_size=0.5,
                                     random_state=0)
     Uy = np.full_like(Uy, -1)
@@ -128,8 +140,8 @@ def test_LogReg():
     assert model.model.tol == params['tol']
     assert model.model.C == params['C']
 
-    X_train, X_test, y_train, y_test = train_test_split(spectra,
-                                                        labels,
+    X_train, X_test, y_train, y_test = train_test_split(pytest.spectra,
+                                                        pytest.labels,
                                                         test_size=0.2,
                                                         random_state=0)
 
