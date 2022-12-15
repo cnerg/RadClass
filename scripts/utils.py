@@ -6,6 +6,7 @@ from hyperopt import Trials, tpe, fmin
 from functools import partial
 # diagnostics
 from sklearn.metrics import confusion_matrix
+import logging
 # pca
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -88,10 +89,10 @@ def run_hyperopt(space, model, data_dict, max_evals=50, verbose=True):
     worst = trials.results[np.argmax([r['loss'] for r in trials.results])]
 
     if verbose:
-        print('best accuracy:', 1-best['loss'])
-        print('best params:', best['params'])
-        print('worst accuracy:', 1-worst['loss'])
-        print('worst params:', worst['params'])
+        logging.info('best accuracy:', 1-best['loss'])
+        logging.info('best params:', best['params'])
+        logging.info('worst accuracy:', 1-worst['loss'])
+        logging.info('worst params:', worst['params'])
 
     return best, worst
 
@@ -183,9 +184,9 @@ def cross_validation(model, X, y, params, n_splits=3,
         reports = np.append(reports, results)
 
     # report cross validation results
-    print('Average accuracy:', np.mean(accs))
-    print('Max accuracy:', np.max(accs))
-    print('All accuracy:', accs)
+    logging.info('Average accuracy:', np.mean(accs))
+    logging.info('Max accuracy:', np.max(accs))
+    logging.info('All accuracy:', accs)
     # return the results of fresh_start for the max accuracy model
     return reports
 
@@ -202,14 +203,14 @@ def pca(Lx, Ux, n):
     pcadata = np.append(Lx, Ux, axis=0)
     normalizer = StandardScaler()
     x = normalizer.fit_transform(pcadata)
-    print(np.mean(pcadata), np.std(pcadata))
-    print(np.mean(x), np.std(x))
+    logging.info(np.mean(pcadata), np.std(pcadata))
+    logging.info(np.mean(x), np.std(x))
 
     pca = PCA(n_components=n)
     pca.fit_transform(x)
-    print(pca.explained_variance_ratio_)
-    print(pca.singular_values_)
-    print(pca.components_)
+    logging.info(pca.explained_variance_ratio_)
+    logging.info(pca.singular_values_)
+    logging.info(pca.components_)
 
     principalComponents = pca.fit_transform(x)
 

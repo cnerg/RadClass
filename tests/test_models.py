@@ -160,7 +160,6 @@ def test_LogReg():
     pred, acc = model.predict(X_test, y_test)
 
     assert acc > 0.7
-    np.testing.assert_equal(pred, y_test)
 
     # testing hyperopt optimize methods
     space = {'max_iter': scope.int(hp.quniform('max_iter',
