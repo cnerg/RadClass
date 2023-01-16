@@ -129,12 +129,10 @@ def test_pca():
 
 def test_LogReg():
     # test saving model input parameters
-    # missing 'C' key
-    params = {'max_iter': 2022, 'tol': 0.5}
-    with pytest.raises(ValueError):
-        LogReg(params=params)
     params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
-    model = LogReg(params=params)
+    model = LogReg(max_iter=params['max_iter'],
+                   tol=params['tol'],
+                   C=params['C'])
 
     assert model.model.max_iter == params['max_iter']
     assert model.model.tol == params['tol']
