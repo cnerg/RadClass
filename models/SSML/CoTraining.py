@@ -19,37 +19,35 @@ class CoTraining:
         Add multinomial functions and unit tests.
         Add functionality for regression(?)
     Inputs:
-    params: dictionary of logistic regression input functions.
-        keys max_iter, tol, and C supported.
+    kwargs: logistic regression input functions.
+        keys random_state, max_iter, tol, and C supported.
     random_state: int/float for reproducible intiailization.
     '''
 
     # only binary so far
-    def __init__(self, params=None, random_state=0):
+    def __init__(self, **kwargs):
+        # supported keys = ['max_iter', 'tol', 'C', 'random_state']
         # defaults to a fixed value for reproducibility
-        self.random_state = random_state
-        # dictionary of parameters for logistic regression model
-        self.params = params
-        if self.params is None:
-            self.model1 = linear_model.LogisticRegression(
-                            random_state=self.random_state)
-            self.model2 = linear_model.LogisticRegression(
-                            random_state=self.random_state)
-            # default needed for training
-            self.params = {'n_samples': 1}
-        else:
-            self.model1 = linear_model.LogisticRegression(
-                            random_state=self.random_state,
-                            max_iter=params['max_iter'],
-                            tol=params['tol'],
-                            C=params['C']
-                        )
-            self.model2 = linear_model.LogisticRegression(
-                            random_state=self.random_state,
-                            max_iter=params['max_iter'],
-                            tol=params['tol'],
-                            C=params['C']
-                        )
+        self.random_state = kwargs.pop('random_state', 0)
+        self.seed = kwargs.pop('seed', 0)
+        # parameters for cotraining logistic regression models:
+        # defaults to sklearn.linear_model.LogisticRegression default vals
+        self.max_iter = kwargs.pop('max_iter', 100)
+        self.tol = kwargs.pop('tol', 0.0001)
+        self.C = kwargs.pop('C', 1.0)
+        self.n_samples = kwargs.pop('n_samples', 1)
+        self.model1 = linear_model.LogisticRegression(
+                        random_state=self.random_state,
+                        max_iter=self.max_iter,
+                        tol=self.tol,
+                        C=self.C
+                    )
+        self.model2 = linear_model.LogisticRegression(
+                        random_state=self.random_state,
+                        max_iter=self.max_iter,
+                        tol=self.tol,
+                        C=self.C
+                    )
 
     def training_loop(self, slr1, slr2, L_lr1, L_lr2,
                       Ly_lr1, Ly_lr2, U_lr, n_samples,
@@ -155,7 +153,7 @@ class CoTraining:
         # unlabeled co-training data
         Ux = data_dict['Ux']
 
-        clf = CoTraining(params=params, random_state=self.random_state)
+        clf = CoTraining(**params, random_state=self.random_state)
         # training and testing
         model1_accs, model2_accs = clf.train(trainx, trainy, Ux, testx, testy)
         # uses balanced_accuracy accounts for class imbalanced data
@@ -239,10 +237,7 @@ class CoTraining:
         U_lr = Ux.copy()
 
         # set the random seed of training splits for reproducibility
-        # This can be ignored by excluding params['seed']
-        # in the hyperopt space dictionary
-        if 'seed' in self.params.keys():
-            np.random.seed(self.params['seed'])
+        np.random.seed(self.seed)
 
         # TODO: allow a user to specify uneven splits between the two models
         split_frac = 0.5
@@ -262,7 +257,7 @@ class CoTraining:
                                 self.model1, self.model2,
                                 L_lr1, L_lr2,
                                 Ly_lr1, Ly_lr2,
-                                U_lr, self.params['n_samples'],
+                                U_lr, self.n_samples,
                                 testx, testy,
                                 )
 

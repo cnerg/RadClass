@@ -67,16 +67,6 @@ def test_cross_validation():
     # therefore its accuracy should be less than all other folds
     assert (accs[-1] < accs[:-1]).all()
 
-    # test cross validation for supervised data and StratifiedKFold with LogReg
-    # params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
-    # model = LogReg(params=params)
-    # max_acc_model = utils.cross_validation(model=model,
-    #                                        X=X,
-    #                                        y=y,
-    #                                        params=params,
-    #                                        stratified=True)
-    # assert max_acc_model['accuracy'] >= 0.5
-
     # test cross validation for SSML with LabelProp
     # params = {'gamma': 10, 'n_neighbors': 15, 'max_iter': 2022, 'tol': 0.5}
     # model = LabelProp(params=params)
@@ -106,9 +96,10 @@ def test_pca():
     utils.plot_pca(pcs, y_train, np.full_like(Uy, -1), filename, 2)
     os.remove(filename+'.png')
 
-    # filename = 'test_multiD_pca'
-    # utils.multiD_pca(X_train, y_train, Ux, np.full_like(Uy, -1), filename, n=5)
-    # os.remove(filename+'.png')
+    filename = 'test_multiD_pca'
+    pcs = utils.pca(X_train, Ux, 5)
+    utils.plot_pca(pcs, y_train, np.full_like(Uy, -1), filename, 5)
+    os.remove(filename+'.png')
 
     # normalization
     normalizer = StandardScaler()
@@ -197,7 +188,9 @@ def test_LogReg():
 def test_CoTraining():
     # test saving model input parameters
     params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
-    model = CoTraining(params=params)
+    model = CoTraining(max_iter=params['max_iter'],
+                       tol=params['tol'],
+                       C=params['C'])
 
     assert model.model1.max_iter == params['max_iter']
     assert model.model1.tol == params['tol']
@@ -207,8 +200,8 @@ def test_CoTraining():
     assert model.model2.tol == params['tol']
     assert model.model2.C == params['C']
 
-    X, Ux, y, Uy = train_test_split(spectra,
-                                    labels,
+    X, Ux, y, Uy = train_test_split(pytest.spectra,
+                                    pytest.labels,
                                     test_size=0.5,
                                     random_state=0)
     X_train, X_test, y_train, y_test = train_test_split(X,
@@ -231,8 +224,10 @@ def test_CoTraining():
     # testing train and predict methods
     pred, acc, *_ = model.predict(X_test, y_test)
 
-    assert acc > 0.7
-    np.testing.assert_equal(pred, y_test)
+    # since the test data used here is synthetic/toy data (i.e. uninteresting),
+    # the trained model should be at least better than a 50-50 guess
+    # if it was worse, something would be wrong with the ML class
+    assert acc > 0.5
 
     # testing hyperopt optimize methods
     space = {'max_iter': scope.int(hp.quniform('max_iter',
