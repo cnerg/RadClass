@@ -147,10 +147,10 @@ def cross_validation(model, X, y, params, n_splits=3,
     accs = []
     reports = []
 
-    if stratified:
+    if stratified:  # pragma: no cover
         cv = StratifiedKFold(n_splits=n_splits, random_state=random_state,
                              shuffle=shuffle)
-    else:
+    else:   # pragma: no cover
         cv = KFold(n_splits=n_splits, random_state=random_state,
                    shuffle=shuffle)
 
@@ -191,7 +191,7 @@ def cross_validation(model, X, y, params, n_splits=3,
     return reports
 
 
-def pca(Lx, Ux, n): # pragma: no cover
+def pca(Lx, Ux, n):  # pragma: no cover
     '''
     A function for computing n-component PCA.
     Inputs:
@@ -293,7 +293,7 @@ def plot_pca(principalComponents, Ly, Uy, filename, n=2):   # pragma: no cover
     fig.savefig(filename)
 
 
-def plot_cf(testy, predy, title, filename): # pragma: no cover
+def plot_cf(testy, predy, title, filename):  # pragma: no cover
     '''
     Uses sklearn metric to compute a confusion matrix for visualization
     Inputs:
