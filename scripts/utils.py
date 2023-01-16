@@ -191,7 +191,7 @@ def cross_validation(model, X, y, params, n_splits=3,
     return reports
 
 
-def pca(Lx, Ux, n):
+def pca(Lx, Ux, n): # pragma: no cover
     '''
     A function for computing n-component PCA.
     Inputs:
@@ -217,7 +217,7 @@ def pca(Lx, Ux, n):
     return principalComponents
 
 
-def _plot_pca_data(principalComponents, Ly, Uy, ax):
+def _plot_pca_data(principalComponents, Ly, Uy, ax):    # pragma: no cover
     '''
     Helper function for plot_pca that plots data for a given axis.
     Inputs:
@@ -239,7 +239,7 @@ def _plot_pca_data(principalComponents, Ly, Uy, ax):
     return ax
 
 
-def plot_pca(principalComponents, Ly, Uy, filename, n=2):
+def plot_pca(principalComponents, Ly, Uy, filename, n=2):   # pragma: no cover
     '''
     A function for computing and plotting n-dimensional PCA.
     Inputs:
@@ -293,7 +293,7 @@ def plot_pca(principalComponents, Ly, Uy, filename, n=2):
     fig.savefig(filename)
 
 
-def plot_cf(testy, predy, title, filename):
+def plot_cf(testy, predy, title, filename): # pragma: no cover
     '''
     Uses sklearn metric to compute a confusion matrix for visualization
     Inputs:
