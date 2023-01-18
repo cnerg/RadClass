@@ -16,20 +16,22 @@ class CoTraining:
     regression implementation with hyperparameter optimization.
     Data agnostic (i.e. user supplied data inputs).
     TODO: Currently only supports binary classification.
-        Add multinomial functions and unit tests.
-        Add functionality for regression(?)
+        - Add multinomial functions and unit tests.
+        - Add functionality for regression(?)
     Inputs:
     kwargs: logistic regression input functions.
-        keys random_state, max_iter, tol, and C supported.
-    random_state: int/float for reproducible intiailization.
+        keys seed, random_state, max_iter, tol, and C supported.
+        seed/random_state: int/float for reproducible intiailization.
     '''
 
     # only binary so far
     def __init__(self, **kwargs):
-        # supported keys = ['max_iter', 'tol', 'C', 'random_state']
+        # supported keys = ['max_iter', 'tol', 'C', 'random_state', 'seed']
         # defaults to a fixed value for reproducibility
         self.random_state = kwargs.pop('random_state', 0)
+        # set the random seed of training splits for reproducibility
         self.seed = kwargs.pop('seed', 0)
+        np.random.seed(self.seed)
         # parameters for cotraining logistic regression models:
         # defaults to sklearn.linear_model.LogisticRegression default vals
         self.max_iter = kwargs.pop('max_iter', 100)
@@ -235,9 +237,6 @@ class CoTraining:
 
         # avoid overwriting when deleting in co-training loop
         U_lr = Ux.copy()
-
-        # set the random seed of training splits for reproducibility
-        np.random.seed(self.seed)
 
         # TODO: allow a user to specify uneven splits between the two models
         split_frac = 0.5

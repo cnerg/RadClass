@@ -122,14 +122,16 @@ def test_pca():
 
 def test_LogReg():
     # test saving model input parameters
-    params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
+    params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0, 'random_state': 0}
     model = LogReg(max_iter=params['max_iter'],
                    tol=params['tol'],
-                   C=params['C'])
+                   C=params['C'],
+                   random_state=params['random_state'])
 
     assert model.model.max_iter == params['max_iter']
     assert model.model.tol == params['tol']
     assert model.model.C == params['C']
+    assert model.random_state == params['random_state']
 
     X_train, X_test, y_train, y_test = train_test_split(pytest.spectra,
                                                         pytest.labels,
@@ -187,10 +189,13 @@ def test_LogReg():
 
 def test_CoTraining():
     # test saving model input parameters
-    params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
+    params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0,
+              'random_state': 0, 'seed': 1}
     model = CoTraining(max_iter=params['max_iter'],
                        tol=params['tol'],
-                       C=params['C'])
+                       C=params['C'],
+                       random_state=params['random_state'],
+                       seed=params['seed'])
 
     assert model.model1.max_iter == params['max_iter']
     assert model.model1.tol == params['tol']
@@ -199,6 +204,9 @@ def test_CoTraining():
     assert model.model2.max_iter == params['max_iter']
     assert model.model2.tol == params['tol']
     assert model.model2.C == params['C']
+
+    assert model.random_state == params['random_state']
+    assert model.seed == params['seed']
 
     X, Ux, y, Uy = train_test_split(pytest.spectra,
                                     pytest.labels,
