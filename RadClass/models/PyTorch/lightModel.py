@@ -5,16 +5,16 @@ import torch.optim as optim
 # from flash.core import LARS
 from tqdm import tqdm
 
-import sys
-import os
-sys.path.append(os.getcwd()+'/scripts/')
-sys.path.append(os.getcwd()+'/models/PyTorch/')
-sys.path.append(os.getcwd()+'/models/SSL/')
+# import sys
+# import os
+# sys.path.append(os.getcwd()+'/scripts/')
+# sys.path.append(os.getcwd()+'/models/PyTorch/')
+# sys.path.append(os.getcwd()+'/models/SSL/')
 
-from configs import get_datasets
-from evaluate import save_checkpoint, encode_train_set, train_clf, test
+from ...scripts.configs import get_datasets
+from ...scripts.evaluate import save_checkpoint, encode_train_set, train_clf, test
 # from models import *
-from scheduler import CosineAnnealingWithLinearRampLR
+from ...scripts.scheduler import CosineAnnealingWithLinearRampLR
 
 from pytorch_metric_learning.losses import SelfSupervisedLoss, NTXentLoss
 from pytorch_metric_learning import losses, reducers
@@ -135,7 +135,7 @@ class LitSimCLR(pl.LightningModule):
     # as manually implemented via A E Foster
     def __init__(self, clf, net, proj, critic, batch_size, sub_batch_size, lr,
                  momentum, cosine_anneal, num_epochs, alpha, n_classes,
-                 test_freq, testloader, convolution):
+                 test_freq, testloader, convolution, betas=(0.8, 0.99), weight_decay=1e-6):
         super().__init__()
         # intiialize linear classifier used in validation and testing
         self.clf = clf
@@ -146,7 +146,7 @@ class LitSimCLR(pl.LightningModule):
         self.sub_batch_size = sub_batch_size
         self.lr, self.momentum, self.cosine_anneal, self.num_epochs, self.alpha, self.n_classes, self.test_freq, self.testloader = lr, momentum, cosine_anneal, num_epochs, alpha, n_classes, test_freq, testloader
         self.save_hyperparameters(ignore=['critic', 'proj', 'net'])
-        
+
         # True if net is CNN
         self.convolution = convolution
 
@@ -154,22 +154,23 @@ class LitSimCLR(pl.LightningModule):
         # must use additional library: https://github.com/fadel/pytorch_ema
         # self.ema = ExponentialMovingAverage(self.encoder.parameters(), decay=0.995)
 
-    def custom_histogram_adder(self):
-        # iterating through all parameters
-        for name, params in self.named_parameters():
-            self.logger.experiment.add_histogram(name,
-                                                 params,
-                                                 self.current_epoch)
+    # def custom_histogram_adder(self):
+    #     # iterating through all parameters
+    #     for name, params in self.named_parameters():
+    #         self.logger.experiment.add_histogram(name,
+    #                                              params,
+    #                                              self.current_epoch)
 
     def configure_optimizers(self):
-        base_optimizer = optim.SGD(list(self.net.parameters())
-                                   + list(self.proj.parameters()),
-                                   #    + list(self.critic.parameters()),
-                                   lr=self.lr, weight_decay=1e-6,
-                                   momentum=self.momentum)
-        # optimizer_kwargs = dict(lr=self.lr, betas=(0.8, 0.99), weight_decay=1e-6)
-        # base_optimizer = torch.optim.AdamW(self.parameters(),
-        #                                    **optimizer_kwargs)
+        # base_optimizer = optim.SGD(list(self.net.parameters())
+        #                            + list(self.proj.parameters()),
+        #                            #    + list(self.critic.parameters()),
+        #                            lr=self.lr, weight_decay=1e-6,
+        #                            momentum=self.momentum)
+        optimizer_kwargs = dict(lr=self.lr, betas=(0.8, 0.99), weight_decay=1e-6)
+        base_optimizer = torch.optim.AdamW(list(self.net.parameters())
+                                           + list(self.critic.parameters()),
+                                           **optimizer_kwargs)
 
         if self.cosine_anneal:
             self.scheduler = CosineAnnealingWithLinearRampLR(base_optimizer,
@@ -189,11 +190,11 @@ class LitSimCLR(pl.LightningModule):
             x1, x2 = x1.unsqueeze(1), x2.unsqueeze(1)
 
         # graph logging
-        if self.current_epoch == 0:
-            self.logger.experiment.add_graph(self.net,
-                                             torch.randn(self.batch_size,
-                                                         1,
-                                                         1000))
+        # if self.current_epoch == 0:
+        #     self.logger.experiment.add_graph(self.net,
+        #                                      torch.randn(self.batch_size,
+        #                                                  1,
+        #                                                  1000))
         if (self.test_freq > 0) and (self.current_epoch %
                                      (self.test_freq*2) ==
                                      ((self.test_freq*2) - 1)):

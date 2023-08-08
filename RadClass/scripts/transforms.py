@@ -1,12 +1,12 @@
-from augs import DANSE
+from .augs import DANSE
 import numpy as np
 import pandas as pd
 from scipy.stats import loguniform
 import torch
 
-import sys
-import os
-sys.path.append(os.getcwd()+'/scripts/')
+# import sys
+# import os
+# sys.path.append(os.getcwd()+'/scripts/')
 
 
 class Background(torch.nn.Module):

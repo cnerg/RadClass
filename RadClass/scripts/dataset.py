@@ -2,11 +2,11 @@ import numpy as np
 import torch
 import logging
 from torch.utils.data import Dataset
-from augs import DANSE
+from .augs import DANSE
 
-import sys
-import os
-sys.path.append(os.getcwd()+'/scripts/')
+# import sys
+# import os
+# sys.path.append(os.getcwd()+'/scripts/')
 
 
 def remove_bckg(X):

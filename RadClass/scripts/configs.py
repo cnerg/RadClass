@@ -30,15 +30,16 @@ SOFTWARE.
 # import torchvision
 # import torchvision.transforms as transforms
 
-import sys
-import os
-sys.path.append(os.getcwd()+'/scripts/')
-sys.path.append(os.getcwd()+'/data/')
+# import sys
+# import os
+# sys.path.append(os.getcwd()+'/scripts/')
+# sys.path.append(os.getcwd()+'/data/')
 # from augmentation import ColourDistortion
-from dataset import MINOSBiaugment, DataOrganizer, DataBiaugment
-from specTools import read_h_file
+from .dataset import MINOSBiaugment, DataOrganizer, DataBiaugment
+from .specTools import read_h_file
 # from models import *
-import transforms
+from .transforms import Background, Resample, Sig2Bckg, Nuclear, \
+    Resolution, Mask, GainShift
 from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
@@ -60,13 +61,13 @@ def get_datasets(dataset, dset_fpath, bckg_fpath, valsfpath=None,
 
     ssml_dset = None
     transform_dict = {
-        'Background': transforms.Background(bckg_dir=bckg_fpath, mode='beads'),
-        'Resample': transforms.Resample(),
-        'Sig2Bckg': transforms.Sig2Bckg(bckg_dir=bckg_fpath, mode='beads', r=(0.5, 1.5)),
-        'Nuclear': transforms.Nuclear(binE=3),
-        'Resolution': transforms.Resolution(multiplier=(0.5, 1.5)),
-        'Mask': transforms.Mask(),
-        'GainShift': transforms.GainShift()
+        'Background': Background(bckg_dir=bckg_fpath, mode='beads'),
+        'Resample': Resample(),
+        'Sig2Bckg': Sig2Bckg(bckg_dir=bckg_fpath, mode='beads', r=(0.5, 1.5)),
+        'Nuclear': Nuclear(binE=3),
+        'Resolution': Resolution(multiplier=(0.5, 1.5)),
+        'Mask': Mask(),
+        'GainShift': GainShift()
     }
     transform_train = []
     if augs is not None:
@@ -74,13 +75,13 @@ def get_datasets(dataset, dset_fpath, bckg_fpath, valsfpath=None,
             transform_train.append(transform_dict[key])
     else:
         transform_train = [
-            transforms.Background(bckg_dir=bckg_fpath, mode='beads'),
-            transforms.Resample(),
-            transforms.Sig2Bckg(bckg_dir=bckg_fpath, mode='beads', r=(0.5, 1.5)),
-            transforms.Nuclear(binE=3),
-            transforms.Resolution(multiplier=(0.5, 1.5)),
-            transforms.Mask(),
-            transforms.GainShift()
+            Background(bckg_dir=bckg_fpath, mode='beads'),
+            Resample(),
+            Sig2Bckg(bckg_dir=bckg_fpath, mode='beads', r=(0.5, 1.5)),
+            Nuclear(binE=3),
+            Resolution(multiplier=(0.5, 1.5)),
+            Mask(),
+            GainShift()
         ]
     print('list of transformations:')
     for t in transform_train:

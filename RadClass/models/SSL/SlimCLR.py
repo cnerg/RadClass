@@ -8,18 +8,18 @@ import torch.optim as optim
 # from torchlars import LARS
 from tqdm import tqdm
 
-import sys
-import os
-sys.path.append(os.getcwd()+'/scripts/')
-sys.path.append(os.getcwd()+'/models/PyTorch/')
-sys.path.append(os.getcwd()+'/models/SSL/')
+# import sys
+# import os
+# sys.path.append(os.getcwd()+'/scripts/')
+# sys.path.append(os.getcwd()+'/models/PyTorch/')
+# sys.path.append(os.getcwd()+'/models/SSL/')
 
-from configs import get_datasets
-from critic import LinearCritic
-from evaluate import save_checkpoint, encode_train_set, train_clf, test
+from ...scripts.configs import get_datasets
+from ..PyTorch.critic import LinearCritic
+from ...scripts.evaluate import save_checkpoint, encode_train_set, train_clf, test
 # from models import *
-from scheduler import CosineAnnealingWithLinearRampLR
-from ann import LinearNN
+from ...scripts.scheduler import CosineAnnealingWithLinearRampLR
+from ..PyTorch.ann import LinearNN
 
 from pytorch_metric_learning.losses import SelfSupervisedLoss, NTXentLoss
 from pytorch_metric_learning import losses, reducers

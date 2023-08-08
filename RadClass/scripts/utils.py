@@ -80,38 +80,40 @@ def run_hyperopt(space, model, data_dict, max_evals=50, njobs=4, verbose=True):
     algo = ConcurrencyLimiter(algo, max_concurrent=njobs)
 
     # wrap data into objective function
-    fmin_objective = partial(model, data_dict=data_dict)
+    # fmin_objective = partial(model, data_dict=data_dict)
 
     # run hyperopt
     tuner = tune.Tuner(
-                fmin_objective,
+                tune.with_parameters(model, data=data_dict),
                 param_space=space,
                 tune_config=tune.TuneConfig(num_samples=max_evals,
-                                            metric='score',
-                                            mode='max',
+                                            metric='loss',
+                                            mode='min',
                                             search_alg=algo),
             )
 
     results = tuner.fit()
 
     # of all trials, find best and worst loss/accuracy from optimization
-    best = results.get_best_result(metric='score', mode='max').metrics
-    worst = results.get_best_result(metric='score', mode='min').metrics
+    best = results.get_best_result(metric='loss', mode='min').metrics
+    worst = results.get_best_result(metric='loss', mode='max').metrics
 
     if verbose:
         print('best metrics:')
         print('\taccuracy:', best['accuracy'])
-        print('\tprecision:', best['precision'])
-        print('\trecall:', best['recall'])
-        print('\tscore:', best['score'])
+        # print('\tprecision:', best['precision'])
+        # print('\trecall:', best['recall'])
+        # print('\tscore:', best['score'])
+        print('\tloss:', best['loss'])
         print('\tparams:', best['params'])
         print('\tmodel:', best['model'])
 
         print('worst metrics:')
         print('\taccuracy:', worst['accuracy'])
-        print('\tprecision:', worst['precision'])
-        print('\trecall:', worst['recall'])
-        print('\tscore:', worst['score'])
+        # print('\tprecision:', worst['precision'])
+        # print('\trecall:', worst['recall'])
+        # print('\tscore:', worst['score'])
+        print('\tloss:', worst['loss'])
         print('\tparams:', worst['params'])
         print('\tmodel:', worst['model'])
 

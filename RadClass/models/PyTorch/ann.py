@@ -5,10 +5,10 @@ import pandas as pd
 
 from sklearn.metrics import r2_score
 
-import sys
-import os
-sys.path.append(os.getcwd()+'/models/PyTorch/')
-from critic import MSELoss
+# import sys
+# import os
+# sys.path.append(os.getcwd()+'/models/PyTorch/')
+from .critic import MSELoss
 
 import torch
 from torch import nn
