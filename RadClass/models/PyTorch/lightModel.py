@@ -195,10 +195,10 @@ class LitSimCLR(pl.LightningModule):
         #                                      torch.randn(self.batch_size,
         #                                                  1,
         #                                                  1000))
-        if (self.test_freq > 0) and (self.current_epoch %
-                                     (self.test_freq*2) ==
-                                     ((self.test_freq*2) - 1)):
-            self.custom_histogram_adder()
+        # if (self.test_freq > 0) and (self.current_epoch %
+        #                              (self.test_freq*2) ==
+        #                              ((self.test_freq*2) - 1)):
+        #     self.custom_histogram_adder()
 
         # x1, x2 = x1.to(device), x2.to(device)
         # encoder_optimizer.zero_grad()

@@ -1,6 +1,7 @@
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import time
 # For hyperparameter optimization
 from ray import air, tune
 from ray.tune.search.hyperopt import HyperOptSearch
@@ -56,7 +57,23 @@ class EarlyStopper:
         return False
 
 
-def run_hyperopt(space, model, data_dict, max_evals=50, njobs=4, verbose=True):
+class TimeStopper(tune.Stopper):
+    # Stopper for global elapsed time in raytune.
+    # See raytune docs on ray.tune.stopper.Stopper
+    def __init__(self):
+        self._start = time.time()
+        # Stop all trials after 70 hours (in seconds)
+        self._deadline = 252000
+
+    def __call__(self, trial_id, result):
+        return False
+
+    def stop_all(self):
+        return time.time() - self._start > self._deadline
+
+
+def run_hyperopt(space, model, data_dict, metric='loss', mode='min',
+                 max_evals=50, njobs=4, verbose=True):
     '''
     Runs hyperparameter optimization on a model given a parameter space.
     Inputs:
@@ -86,17 +103,26 @@ def run_hyperopt(space, model, data_dict, max_evals=50, njobs=4, verbose=True):
     tuner = tune.Tuner(
                 tune.with_parameters(model, data=data_dict),
                 param_space=space,
+                run_config=air.RunConfig(stop=TimeStopper()),
                 tune_config=tune.TuneConfig(num_samples=max_evals,
-                                            metric='loss',
-                                            mode='min',
+                                            metric=metric,
+                                            mode=mode,
                                             search_alg=algo),
             )
 
     results = tuner.fit()
 
     # of all trials, find best and worst loss/accuracy from optimization
-    best = results.get_best_result(metric='loss', mode='min').metrics
-    worst = results.get_best_result(metric='loss', mode='max').metrics
+    if mode == 'min':
+        worst_mode = 'max'
+    else:
+        worst_mode = 'min'
+    best = results.get_best_result(metric=metric, mode=mode)
+    worst = results.get_best_result(metric=metric, mode=worst_mode)
+    # best_checkpoint = best.checkpoint
+    best = best.metrics
+    # worst_checkpoint = worst.checkpoint
+    worst = worst.metrics
 
     if verbose:
         print('best metrics:')
@@ -106,7 +132,7 @@ def run_hyperopt(space, model, data_dict, max_evals=50, njobs=4, verbose=True):
         # print('\tscore:', best['score'])
         print('\tloss:', best['loss'])
         print('\tparams:', best['params'])
-        print('\tmodel:', best['model'])
+        # print('\tmodel:', best['model'])
 
         print('worst metrics:')
         print('\taccuracy:', worst['accuracy'])
@@ -115,9 +141,9 @@ def run_hyperopt(space, model, data_dict, max_evals=50, njobs=4, verbose=True):
         # print('\tscore:', worst['score'])
         print('\tloss:', worst['loss'])
         print('\tparams:', worst['params'])
-        print('\tmodel:', worst['model'])
+        # print('\tmodel:', worst['model'])
 
-    return best, worst
+    return best, worst  # , best_checkpoint, worst_checkpoint
 
 
 def cross_validation(model, X, y, params, n_splits=3,

@@ -2,6 +2,7 @@ import argparse
 import os
 import subprocess
 import glob
+import time
 
 import torch
 import torch.nn as nn
@@ -28,7 +29,7 @@ from pytorch_metric_learning.losses import SelfSupervisedLoss, NTXentLoss
 from pytorch_metric_learning import losses, reducers
 from pytorch_metric_learning.utils import loss_and_miner_utils as lmu
 
-from ray import tune
+from ray import put, tune
 
 import numpy as np
 import joblib
@@ -80,6 +81,8 @@ def parse_arguments():
                         help='SGD momentum')
     parser.add_argument('--resume', '-r', type=str, default=None,
                         help='resume from checkpoint with this filename')
+    parser.add_argument('--checkpoint', type=str, default=None,
+                        help='filename to checkpoint for resuming raytune')
     parser.add_argument('--dataset', '-d', type=str, default='minos',
                         help='dataset keyword',
                         choices=['minos', 'minos-ssml', 'minos-transfer-ssml',
@@ -99,6 +102,12 @@ def parse_arguments():
                         help='Training batch size')
     parser.add_argument("--num-epochs", type=int, default=100,
                         help='Number of training epochs')
+    parser.add_argument("--njobs", type=int, default=5,
+                        help='Number of raytune parallel jobs')
+    parser.add_argument("--max-evals", type=int, default=50,
+                        help='Number of raytune iterations')
+    parser.add_argument("--batches", type=float, default=0.75,
+                        help='Maximum number or percent of batches per epoch.')
     parser.add_argument("--cosine-anneal", action='store_true',
                         help="Use cosine annealing on the learning rate")
     parser.add_argument("--normalization", action='store_true',
@@ -160,8 +169,6 @@ def fresh_start(params, data):
         lr = params['lr'] * (np.sqrt(params['batch_size']) / 256)
     else:
         lr = params['lr'] * (params['batch_size'] / 256)
-
-    print('THIS IS WHAT MID LOOKS LIKE', params['mid'])
 
     # unpack data
     full_trainset = data['full_trainset']
@@ -264,22 +271,25 @@ def fresh_start(params, data):
                          #  default_root_dir=ckpt_path,
                          check_val_every_n_epoch=params['test_freq'],
                          #  profiler='simple',
-                         limit_train_batches=100,
+                         limit_train_batches=params['batches'],
                          num_sanity_val_steps=0,
                          enable_checkpointing=False)
     trainer.fit(model=lightning_model, train_dataloaders=trainloader,
                 val_dataloaders=valloader)  # , ckpt_path=args.resume)
-    predicted, bacc = trainer.test(model=lightning_model,
-                                   dataloaders=testloader)
+    loss = trainer.callback_metrics['train_loss']
+    trainer.test(model=lightning_model,
+                 dataloaders=testloader)
+    accuracy = trainer.callback_metrics['test_bacc']
 
     # loss function minimizes misclassification
     # by maximizing metrics
     return {
         # 'score': acc+(self.alpha*rec)+(self.beta*prec),
-        'loss': lightning_model.log['train_loss'][-1],
+        # 'loss': lightning_model.log['train_loss'][-1],
+        'loss': loss.item(),
         'model': lightning_model,
         'params': params,
-        'accuracy': bacc,
+        'accuracy': accuracy.item(),
         # 'precision': prec,
         # 'recall': rec
     }
@@ -335,15 +345,22 @@ def main():
         'cosine_anneal': True,
         'alpha': 1.,
         'num_classes': 2,
-        'num_epochs': 10,
-        'test_freq': 20,
-        'num_workers': 1,
-        'in_dim': 1000
+        'num_epochs': args.num_epochs,
+        'test_freq': args.test_freq,
+        'num_workers': args.num_workers,
+        'in_dim': 1000,
+        'batches': args.batches
     }
 
-    njobs = args.num_workers
-    run_hyperopt(space, fresh_start, data_dict,
-                 max_evals=10, njobs=njobs, verbose=True)
+    if args.checkpoint is not None:
+        checkpoint = joblib.load(args.checkpoint)
+        space['start_from_checkpoint']: put(checkpoint)
+
+    best, worst = run_hyperopt(space, fresh_start, data_dict,
+                               max_evals=args.max_evals,
+                               njobs=args.njobs,
+                               verbose=True)
+    joblib.dump(best, 'best_model.joblib')
 
 
 if __name__ == "__main__":
