@@ -155,7 +155,7 @@ def get_datasets(dataset, dset_fpath, bckg_fpath, valsfpath=None,
         y = test_data['event'].values
         Xval, Xtest, \
             val_targets, test_targets = train_test_split(X, y,
-                                                         train_size=0.03,
+                                                         train_size=0.2,
                                                          stratify=y)
         # all test values are positives
         # ytest = np.full_like(ytest, 0, dtype=np.int32)

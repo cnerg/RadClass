@@ -145,7 +145,8 @@ class LitSimCLR(pl.LightningModule):
         self.batch_size = batch_size
         self.sub_batch_size = sub_batch_size
         self.lr, self.momentum, self.cosine_anneal, self.num_epochs, self.alpha, self.n_classes, self.test_freq, self.testloader = lr, momentum, cosine_anneal, num_epochs, alpha, n_classes, test_freq, testloader
-        self.save_hyperparameters(ignore=['critic', 'proj', 'net'])
+        self.betas, self.weight_decay = betas, weight_decay
+        self.save_hyperparameters(ignore=['critic', 'proj', 'net', 'testloader'])
 
         # True if net is CNN
         self.convolution = convolution
@@ -167,7 +168,8 @@ class LitSimCLR(pl.LightningModule):
         #                            #    + list(self.critic.parameters()),
         #                            lr=self.lr, weight_decay=1e-6,
         #                            momentum=self.momentum)
-        optimizer_kwargs = dict(lr=self.lr, betas=(0.8, 0.99), weight_decay=1e-6)
+        optimizer_kwargs = dict(lr=self.lr, betas=self.betas,
+                                weight_decay=self.weight_decay)
         base_optimizer = torch.optim.AdamW(list(self.net.parameters())
                                            + list(self.critic.parameters()),
                                            **optimizer_kwargs)
@@ -312,14 +314,9 @@ class LitSimCLR(pl.LightningModule):
 
         # rolling test/validation
         with torch.no_grad():
-            t = tqdm(enumerate(self.testloader),
-                     total=len(self.testloader),
-                     desc='Loss: **** | Test Acc: ****% ',
-                     bar_format='{desc}{bar}{r_bar}')
-            for batch_idx, batch in t:
+            for batch_idx, batch in enumerate(self.testloader):
                 _, bacc = self.test_step(batch, batch_idx)
-
-                t.set_description('Test BAcc: %.3f%% ' % (bacc))
+                print('Test BAcc: %.3f%% ' % (bacc))
         return predicted
 
     def test_step(self, batch, batch_idx):

@@ -63,7 +63,8 @@ class TimeStopper(tune.Stopper):
     def __init__(self):
         self._start = time.time()
         # Stop all trials after 70 hours (in seconds)
-        self._deadline = 252000
+        # self._deadline = 252000
+        self._deadline = 345600
 
     def __call__(self, trial_id, result):
         return False
@@ -72,8 +73,8 @@ class TimeStopper(tune.Stopper):
         return time.time() - self._start > self._deadline
 
 
-def run_hyperopt(space, model, data_dict, metric='loss', mode='min',
-                 max_evals=50, njobs=4, verbose=True):
+def run_hyperopt(space, model, data, testset, metric='loss', mode='min',
+                 max_evals=50, num_workers=1, njobs=4, verbose=True):
     '''
     Runs hyperparameter optimization on a model given a parameter space.
     Inputs:
@@ -93,21 +94,25 @@ def run_hyperopt(space, model, data_dict, metric='loss', mode='min',
         best trained model, best parameters, etc.
     '''
 
-    algo = HyperOptSearch()
+    algo = HyperOptSearch(metric=metric, mode=mode)
     algo = ConcurrencyLimiter(algo, max_concurrent=njobs)
 
     # wrap data into objective function
     # fmin_objective = partial(model, data_dict=data_dict)
 
+    trainable = tune.with_resources(
+        tune.with_parameters(model, data=data, testset=testset),
+        {"cpu": num_workers+1})
     # run hyperopt
     tuner = tune.Tuner(
-                tune.with_parameters(model, data=data_dict),
+                trainable,
                 param_space=space,
-                run_config=air.RunConfig(stop=TimeStopper()),
+                # run_config=air.RunConfig(stop=TimeStopper()),
                 tune_config=tune.TuneConfig(num_samples=max_evals,
                                             metric=metric,
                                             mode=mode,
                                             search_alg=algo),
+                                            # time_budget_s=3600),
             )
 
     results = tuner.fit()

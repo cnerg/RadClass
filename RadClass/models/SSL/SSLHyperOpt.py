@@ -30,6 +30,7 @@ from pytorch_metric_learning import losses, reducers
 from pytorch_metric_learning.utils import loss_and_miner_utils as lmu
 
 from ray import put, tune
+from ray.air import session
 
 import numpy as np
 import joblib
@@ -155,7 +156,7 @@ def architecture(config):
         return np.array([np.random.choice([512, 1024, 2048, 4096]) for i in range(config['n_layers'])])
 
 
-def fresh_start(params, data):
+def fresh_start(params, data, testset):
     # device = 'cuda' if torch.cuda.is_available() else 'cpu'
     device = 'cpu'
     # for use with a GPU
@@ -164,33 +165,6 @@ def fresh_start(params, data):
     # print(f'device used={device}')
     pin_memory = True if device == 'cuda' else False
     print(f'pin_memory={pin_memory}')
-
-    if params['batch_size'] <= 1024:
-        lr = params['lr'] * (np.sqrt(params['batch_size']) / 256)
-    else:
-        lr = params['lr'] * (params['batch_size'] / 256)
-
-    # unpack data
-    full_trainset = data['full_trainset']
-    valset = data['valset']
-    testset = data['testset']
-    trainloader = torch.utils.data.DataLoader(full_trainset,
-                                              batch_size=params['batch_size'],
-                                              shuffle=True,
-                                              num_workers=params['num_workers'],
-                                              pin_memory=pin_memory)
-    valloader = torch.utils.data.DataLoader(valset,
-                                            batch_size=params['batch_size'],
-                                            shuffle=False,
-                                            # num_workers=args.num_workers,
-                                            num_workers=0,
-                                            pin_memory=pin_memory)
-    testloader = torch.utils.data.DataLoader(testset,
-                                             batch_size=params['batch_size'],
-                                             shuffle=False,
-                                             #  num_workers=args.num_workers,
-                                             num_workers=0,
-                                             pin_memory=pin_memory)
 
     # Model
     print('==> Building model..')
@@ -257,6 +231,17 @@ def fresh_start(params, data):
     # joblib.dump(trainset.mean, ckpt_path+args.filename+'-train_means.joblib')
     # joblib.dump(trainset.std, ckpt_path+args.filename+'-train_stds.joblib')
 
+    testloader = torch.utils.data.DataLoader(testset,
+                                             batch_size=len(testset),
+                                             shuffle=False,
+                                             num_workers=0,
+                                             pin_memory=data.pin_memory)
+
+    if params['batch_size'] <= 1024:
+        lr = params['lr'] * (np.sqrt(params['batch_size']) / 256)
+    else:
+        lr = params['lr'] * (params['batch_size'] / 256)
+
     lightning_model = LitSimCLR(clf, net, proj_head, critic,
                                 params['batch_size'],
                                 sub_batch_size, lr, params['momentum'],
@@ -274,25 +259,64 @@ def fresh_start(params, data):
                          limit_train_batches=params['batches'],
                          num_sanity_val_steps=0,
                          enable_checkpointing=False)
-    trainer.fit(model=lightning_model, train_dataloaders=trainloader,
-                val_dataloaders=valloader)  # , ckpt_path=args.resume)
+    trainer.fit(model=lightning_model, datamodule=data)
+                # val_dataloaders=valloader)  # , ckpt_path=args.resume)
     loss = trainer.callback_metrics['train_loss']
     trainer.test(model=lightning_model,
-                 dataloaders=testloader)
+                 datamodule=data)
+                #  dataloaders=testloader)
     accuracy = trainer.callback_metrics['test_bacc']
 
     # loss function minimizes misclassification
     # by maximizing metrics
-    return {
+    results = {
         # 'score': acc+(self.alpha*rec)+(self.beta*prec),
         # 'loss': lightning_model.log['train_loss'][-1],
         'loss': loss.item(),
         'model': lightning_model,
-        'params': params,
+        # 'params': params,
         'accuracy': accuracy.item(),
         # 'precision': prec,
         # 'recall': rec
     }
+
+    session.report(results)
+    return results
+
+
+class RadDataModule(pl.LightningDataModule):
+    def __init__(self, trainset, valset, testset, batch_size=512,
+                 num_workers=0, pin_memory=False):
+        super().__init__()
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.pin_memory = pin_memory
+        self.trainset = trainset
+        self.valset = valset
+        self.testset = testset
+
+    def train_dataloader(self):
+        return torch.utils.data.DataLoader(self.trainset,
+                                           batch_size=self.batch_size,
+                                           shuffle=True,
+                                           num_workers=self.num_workers,
+                                           pin_memory=self.pin_memory)
+
+    def val_dataloader(self):
+        return torch.utils.data.DataLoader(self.valset,
+                                           # only one batch for validation
+                                           batch_size=len(self.valset),
+                                           shuffle=False,
+                                           num_workers=0,
+                                           pin_memory=self.pin_memory)
+
+    def test_dataloader(self):
+        return torch.utils.data.DataLoader(self.testset,
+                                           # only one batch for testing
+                                           batch_size=len(self.testset),
+                                           shuffle=False,
+                                           num_workers=0,
+                                           pin_memory=self.pin_memory)
 
 
 def main():
@@ -327,37 +351,64 @@ def main():
     else:
         full_trainset = trainset
 
-    data_dict = {'full_trainset': full_trainset,
-                 'valset': valset,
-                 'testset': testset}
+    # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cpu'
+    # for use with a GPU
+    # if device == 'cuda':
+    #     torch.set_float32_matmul_precision('medium')
+    # print(f'device used={device}')
+    pin_memory = True if device == 'cuda' else False
+    print(f'pin_memory={pin_memory}')
+
+    dataset = RadDataModule(full_trainset, valset, testset, args.batch_size,
+                            args.num_workers, pin_memory)
+
+    # # static configs that does not change across trials
+    # stat_lightning_config = (
+    #     LightningConfigBuilder()
+    #     .module(cls=LitSimCLR)
+    #     .trainer(max_epochs=args.num_epochs)
+    #     .fit_params(datamodule=dataset)
+    #     .checkpointing(monitor='train_loss', mode='min')
+    #     .build()
+    # )
+
+    # # searchable configs across different trials
+    # searchable_lightning_config = (
+    #     LightningConfigBuilder()
+    #     .module(config=space)
+    #     .build()
+    # )
 
     space = {
-        'batch_size': tune.choice([128, 256, 512, 1024, 2048, 4096, 8192]),
         'lr': tune.loguniform(1e-5, 0.5),
-        'n_layers': tune.qrandint(1, 10),
-        'convolution': tune.choice([0, 1]),
+        'n_layers': tune.qrandint(1, 7),
+        # ONLY CONVOLUTION
+        'convolution': tune.choice([1]),
         'mid': tune.sample_from(architecture),
         'temperature': tune.uniform(0.1, 0.9),
         'momentum': tune.loguniform(0.5, 0.99),
         'beta1': tune.loguniform(0.7, 0.99),
         'beta2': tune.loguniform(0.8, 0.999),
         'weight_decay': tune.loguniform(1e-7, 1e-2),
+        # 'batch_size': tune.choice([128, 256, 512, 1024, 2048, 4096]),#, 8192]),
+        'batch_size': args.batch_size,
+        'batches': args.batches,
         'cosine_anneal': True,
         'alpha': 1.,
         'num_classes': 2,
         'num_epochs': args.num_epochs,
         'test_freq': args.test_freq,
-        'num_workers': args.num_workers,
         'in_dim': 1000,
-        'batches': args.batches
     }
 
-    if args.checkpoint is not None:
-        checkpoint = joblib.load(args.checkpoint)
-        space['start_from_checkpoint']: put(checkpoint)
+    # if args.checkpoint is not None:
+    #     checkpoint = joblib.load(args.checkpoint)
+    #     space['start_from_checkpoint']: put(checkpoint)
 
-    best, worst = run_hyperopt(space, fresh_start, data_dict,
+    best, worst = run_hyperopt(space, fresh_start, dataset, testset,
                                max_evals=args.max_evals,
+                               num_workers=args.num_workers,
                                njobs=args.njobs,
                                verbose=True)
     joblib.dump(best, 'best_model.joblib')
