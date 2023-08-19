@@ -6,6 +6,7 @@ import time
 from ray import air, tune
 from ray.tune.search.hyperopt import HyperOptSearch
 from ray.tune.search import ConcurrencyLimiter
+from hyperopt import Trials, tpe, fmin
 from functools import partial
 # diagnostics
 from sklearn.metrics import confusion_matrix
@@ -94,40 +95,50 @@ def run_hyperopt(space, model, data, testset, metric='loss', mode='min',
         best trained model, best parameters, etc.
     '''
 
-    algo = HyperOptSearch(metric=metric, mode=mode)
-    algo = ConcurrencyLimiter(algo, max_concurrent=njobs)
+    # algo = HyperOptSearch(metric=metric, mode=mode)
+    # algo = ConcurrencyLimiter(algo, max_concurrent=njobs)
+
+    trials = Trials()
 
     # wrap data into objective function
-    # fmin_objective = partial(model, data_dict=data_dict)
+    fmin_objective = partial(model, data=data, testset=testset)
 
-    trainable = tune.with_resources(
-        tune.with_parameters(model, data=data, testset=testset),
-        {"cpu": num_workers+1})
+    # trainable = tune.with_resources(
+    #     tune.with_parameters(model, data=data, testset=testset),
+    #     {"cpu": num_workers+1})
     # run hyperopt
-    tuner = tune.Tuner(
-                trainable,
-                param_space=space,
-                # run_config=air.RunConfig(stop=TimeStopper()),
-                tune_config=tune.TuneConfig(num_samples=max_evals,
-                                            metric=metric,
-                                            mode=mode,
-                                            search_alg=algo),
-                                            # time_budget_s=3600),
-            )
+    # tuner = tune.Tuner(
+    #             trainable,
+    #             param_space=space,
+    #             # run_config=air.RunConfig(stop=TimeStopper()),
+    #             tune_config=tune.TuneConfig(num_samples=max_evals,
+    #                                         metric=metric,
+    #                                         mode=mode,
+    #                                         search_alg=algo),
+    #                                         # time_budget_s=3600),
+    #         )
 
-    results = tuner.fit()
+    # results = tuner.fit()
+
+    fmin(fmin_objective,
+         space,
+         algo=tpe.suggest,
+         max_evals=max_evals,
+         trials=trials)
 
     # of all trials, find best and worst loss/accuracy from optimization
-    if mode == 'min':
-        worst_mode = 'max'
-    else:
-        worst_mode = 'min'
-    best = results.get_best_result(metric=metric, mode=mode)
-    worst = results.get_best_result(metric=metric, mode=worst_mode)
+    # if mode == 'min':
+    #     worst_mode = 'max'
+    # else:
+    #     worst_mode = 'min'
+    # best = results.get_best_result(metric=metric, mode=mode)
+    # worst = results.get_best_result(metric=metric, mode=worst_mode)
+    best = trials.results[np.argmin([r['loss'] for r in trials.results])]
+    worst = trials.results[np.argmax([r['loss'] for r in trials.results])]
     # best_checkpoint = best.checkpoint
-    best = best.metrics
+    # best = best.metrics
     # worst_checkpoint = worst.checkpoint
-    worst = worst.metrics
+    # worst = worst.metrics
 
     if verbose:
         print('best metrics:')

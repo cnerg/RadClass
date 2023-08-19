@@ -31,6 +31,10 @@ from pytorch_metric_learning.utils import loss_and_miner_utils as lmu
 
 from ray import put, tune
 from ray.air import session
+# hyperopt
+from hyperopt.pyll.base import scope
+from hyperopt import hp
+from hyperopt import STATUS_OK
 
 import numpy as np
 import joblib
@@ -166,6 +170,8 @@ def fresh_start(params, data, testset):
     pin_memory = True if device == 'cuda' else False
     print(f'pin_memory={pin_memory}')
 
+    params['mid'] = architecture(params)
+
     # Model
     print('==> Building model..')
     ##############################################################
@@ -258,7 +264,8 @@ def fresh_start(params, data, testset):
                          #  profiler='simple',
                          limit_train_batches=params['batches'],
                          num_sanity_val_steps=0,
-                         enable_checkpointing=False)
+                         enable_checkpointing=False,
+                         accelerator='cpu')
     trainer.fit(model=lightning_model, datamodule=data)
                 # val_dataloaders=valloader)  # , ckpt_path=args.resume)
     loss = trainer.callback_metrics['train_loss']
@@ -274,7 +281,8 @@ def fresh_start(params, data, testset):
         # 'loss': lightning_model.log['train_loss'][-1],
         'loss': loss.item(),
         'model': lightning_model,
-        # 'params': params,
+        'status': STATUS_OK,
+        'params': params,
         'accuracy': accuracy.item(),
         # 'precision': prec,
         # 'recall': rec
@@ -321,7 +329,7 @@ class RadDataModule(pl.LightningDataModule):
 
 def main():
     torch.set_printoptions(profile='full')
-    eval('setattr(torch.backends.cudnn, "benchmark", True)')
+    # eval('setattr(torch.backends.cudnn, "benchmark", True)')
     logging.basicConfig(filename='debug.log',
                         filemode='a',
                         level=logging.INFO)
@@ -381,16 +389,16 @@ def main():
     # )
 
     space = {
-        'lr': tune.loguniform(1e-5, 0.5),
-        'n_layers': tune.qrandint(1, 7),
+        'lr': hp.uniform('lr', 1e-5, 0.5),
+        'n_layers': scope.int(hp.uniformint('n_layers', 1, 7)),
         # ONLY CONVOLUTION
-        'convolution': tune.choice([1]),
-        'mid': tune.sample_from(architecture),
-        'temperature': tune.uniform(0.1, 0.9),
-        'momentum': tune.loguniform(0.5, 0.99),
-        'beta1': tune.loguniform(0.7, 0.99),
-        'beta2': tune.loguniform(0.8, 0.999),
-        'weight_decay': tune.loguniform(1e-7, 1e-2),
+        'convolution': hp.choice('convolution', [1]),
+        # 'mid': tune.sample_from(architecture),
+        'temperature': hp.uniform('temperature', 0.1, 0.9),
+        'momentum': hp.uniform('momentum', 0.5, 0.99),
+        'beta1': hp.uniform('beta1', 0.7, 0.99),
+        'beta2': hp.uniform('beta2', 0.8, 0.999),
+        'weight_decay': hp.uniform('weight_decay', 1e-7, 1e-2),
         # 'batch_size': tune.choice([128, 256, 512, 1024, 2048, 4096]),#, 8192]),
         'batch_size': args.batch_size,
         'batches': args.batches,
@@ -399,7 +407,7 @@ def main():
         'num_classes': 2,
         'num_epochs': args.num_epochs,
         'test_freq': args.test_freq,
-        'in_dim': 1000,
+        'in_dim': 1000
     }
 
     # if args.checkpoint is not None:
