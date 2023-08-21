@@ -417,7 +417,7 @@ def main():
     trials = run_hyperopt(space, fresh_start, dataset, testset,
                           max_evals=args.max_evals, verbose=True)
     # joblib.dump(best, 'best_model.joblib')
-    joblib.dump(trials, 'trials.joblib')
+    joblib.dump(trials, args.filename+'_trials.joblib')
 
 
 if __name__ == "__main__":
