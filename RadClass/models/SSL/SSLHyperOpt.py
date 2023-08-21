@@ -3,6 +3,7 @@ import os
 import subprocess
 import glob
 import time
+from itertools import combinations_with_replacement
 
 import torch
 import torch.nn as nn
@@ -29,8 +30,6 @@ from pytorch_metric_learning.losses import SelfSupervisedLoss, NTXentLoss
 from pytorch_metric_learning import losses, reducers
 from pytorch_metric_learning.utils import loss_and_miner_utils as lmu
 
-from ray import put, tune
-from ray.air import session
 # hyperopt
 from hyperopt.pyll.base import scope
 from hyperopt import hp
@@ -107,8 +106,6 @@ def parse_arguments():
                         help='Training batch size')
     parser.add_argument("--num-epochs", type=int, default=100,
                         help='Number of training epochs')
-    parser.add_argument("--njobs", type=int, default=5,
-                        help='Number of raytune parallel jobs')
     parser.add_argument("--max-evals", type=int, default=50,
                         help='Number of raytune iterations')
     parser.add_argument("--batches", type=float, default=0.75,
@@ -154,9 +151,28 @@ def parse_arguments():
 
 
 def architecture(config):
+    # architectures = []
     if config['convolution']:
+        # hidden_layers = [8, 16, 32, 64, 128]
+        # for combination in combinations_with_replacement(hidden_layers,
+        #                                                  config['n_layers']):
+        #     architectures.append(list(combination))
+        # for combination in combinations_with_replacement(
+        #     reversed(hidden_layers), config['n_layers']
+        # ):
+        #     architectures.append(list(combination))
+        # return hp.choice('mid', architectures)
         return np.array([np.random.choice([8, 16, 32, 64, 128]) for i in range(config['n_layers'])])
     else:
+        # hidden_layers = [512, 1024, 2048, 4096]
+        # for combination in combinations_with_replacement(hidden_layers,
+        #                                                  config['n_layers']):
+        #     architectures.append(list(combination))
+        # for combination in combinations_with_replacement(
+        #     reversed(hidden_layers), config['n_layers']
+        # ):
+        #     architectures.append(list(combination))
+        # return hp.choice('mid', architectures)
         return np.array([np.random.choice([512, 1024, 2048, 4096]) for i in range(config['n_layers'])])
 
 
@@ -280,7 +296,7 @@ def fresh_start(params, data, testset):
         # 'score': acc+(self.alpha*rec)+(self.beta*prec),
         # 'loss': lightning_model.log['train_loss'][-1],
         'loss': loss.item(),
-        'model': lightning_model,
+        # 'model': lightning_model,
         'status': STATUS_OK,
         'params': params,
         'accuracy': accuracy.item(),
@@ -288,7 +304,6 @@ def fresh_start(params, data, testset):
         # 'recall': rec
     }
 
-    session.report(results)
     return results
 
 
@@ -339,8 +354,8 @@ def main():
     # args.git_diff = subprocess.check_output(['git', 'diff'])
 
     # set seed(s) for reproducibility
-    torch.manual_seed(20230316)
-    np.random.seed(20230316)
+    # torch.manual_seed(20230316)
+    # np.random.seed(20230316)
 
     print('==> Preparing data..')
     # print('min-max normalization? ', args.normalization)
@@ -371,18 +386,21 @@ def main():
     dataset = RadDataModule(full_trainset, valset, testset, args.batch_size,
                             args.num_workers, pin_memory)
 
+    # n_layers = scope.int(hp.uniformint('n_layers', 1, 7))
+    # convolution = hp.choice('convolution', [0, 1])
     space = {
         'lr': hp.uniform('lr', 1e-5, 0.5),
         'n_layers': scope.int(hp.uniformint('n_layers', 1, 7)),
         'convolution': hp.choice('convolution', [0, 1]),
-        # 'mid': tune.sample_from(architecture),
+        # 'mid': hp.choice('mid', architecture({'n_layers': n_layers,
+        #                                       'convolution': convolution})),
         'temperature': hp.uniform('temperature', 0.1, 0.9),
         'momentum': hp.uniform('momentum', 0.5, 0.99),
         'beta1': hp.uniform('beta1', 0.7, 0.99),
         'beta2': hp.uniform('beta2', 0.8, 0.999),
         'weight_decay': hp.uniform('weight_decay', 1e-7, 1e-2),
-        'batch_size': tune.choice([128, 256, 512, 1024, 2048, 4096]),#, 8192]),
-        # 'batch_size': args.batch_size,
+        # 'batch_size': tune.choice([128, 256, 512, 1024, 2048, 4096]),#, 8192]),
+        'batch_size': args.batch_size,
         'batches': args.batches,
         'cosine_anneal': True,
         'alpha': 1.,
@@ -396,12 +414,9 @@ def main():
     #     checkpoint = joblib.load(args.checkpoint)
     #     space['start_from_checkpoint']: put(checkpoint)
 
-    best, worst, trials = run_hyperopt(space, fresh_start, dataset, testset,
-                                       max_evals=args.max_evals,
-                                       num_workers=args.num_workers,
-                                       njobs=args.njobs,
-                                       verbose=True)
-    joblib.dump(best, 'best_model.joblib')
+    trials = run_hyperopt(space, fresh_start, dataset, testset,
+                          max_evals=args.max_evals, verbose=True)
+    # joblib.dump(best, 'best_model.joblib')
     joblib.dump(trials, 'trials.joblib')
 
 

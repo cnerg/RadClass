@@ -3,9 +3,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import time
 # For hyperparameter optimization
-from ray import air, tune
-from ray.tune.search.hyperopt import HyperOptSearch
-from ray.tune.search import ConcurrencyLimiter
 from hyperopt import Trials, tpe, fmin
 from functools import partial
 # diagnostics
@@ -58,24 +55,8 @@ class EarlyStopper:
         return False
 
 
-class TimeStopper(tune.Stopper):
-    # Stopper for global elapsed time in raytune.
-    # See raytune docs on ray.tune.stopper.Stopper
-    def __init__(self):
-        self._start = time.time()
-        # Stop all trials after 70 hours (in seconds)
-        # self._deadline = 252000
-        self._deadline = 345600
-
-    def __call__(self, trial_id, result):
-        return False
-
-    def stop_all(self):
-        return time.time() - self._start > self._deadline
-
-
 def run_hyperopt(space, model, data, testset, metric='loss', mode='min',
-                 max_evals=50, num_workers=1, njobs=4, verbose=True):
+                 max_evals=50, verbose=True):
     '''
     Runs hyperparameter optimization on a model given a parameter space.
     Inputs:

@@ -82,6 +82,7 @@ class ConvNN(nn.Module):
         self.criterion = criterion
         self.p = dropout_rate
         self.n_epochs = n_epochs
+        self.mid = mid
         # default max_pool1d kernel set by Shadow MNIST example
         # NOTE: max_pool1d sets mp_kernel = mp_stride
         self.mp_kernel = 2
