@@ -371,36 +371,18 @@ def main():
     dataset = RadDataModule(full_trainset, valset, testset, args.batch_size,
                             args.num_workers, pin_memory)
 
-    # # static configs that does not change across trials
-    # stat_lightning_config = (
-    #     LightningConfigBuilder()
-    #     .module(cls=LitSimCLR)
-    #     .trainer(max_epochs=args.num_epochs)
-    #     .fit_params(datamodule=dataset)
-    #     .checkpointing(monitor='train_loss', mode='min')
-    #     .build()
-    # )
-
-    # # searchable configs across different trials
-    # searchable_lightning_config = (
-    #     LightningConfigBuilder()
-    #     .module(config=space)
-    #     .build()
-    # )
-
     space = {
         'lr': hp.uniform('lr', 1e-5, 0.5),
         'n_layers': scope.int(hp.uniformint('n_layers', 1, 7)),
-        # ONLY CONVOLUTION
-        'convolution': hp.choice('convolution', [1]),
+        'convolution': hp.choice('convolution', [0, 1]),
         # 'mid': tune.sample_from(architecture),
         'temperature': hp.uniform('temperature', 0.1, 0.9),
         'momentum': hp.uniform('momentum', 0.5, 0.99),
         'beta1': hp.uniform('beta1', 0.7, 0.99),
         'beta2': hp.uniform('beta2', 0.8, 0.999),
         'weight_decay': hp.uniform('weight_decay', 1e-7, 1e-2),
-        # 'batch_size': tune.choice([128, 256, 512, 1024, 2048, 4096]),#, 8192]),
-        'batch_size': args.batch_size,
+        'batch_size': tune.choice([128, 256, 512, 1024, 2048, 4096]),#, 8192]),
+        # 'batch_size': args.batch_size,
         'batches': args.batches,
         'cosine_anneal': True,
         'alpha': 1.,
@@ -414,12 +396,13 @@ def main():
     #     checkpoint = joblib.load(args.checkpoint)
     #     space['start_from_checkpoint']: put(checkpoint)
 
-    best, worst = run_hyperopt(space, fresh_start, dataset, testset,
-                               max_evals=args.max_evals,
-                               num_workers=args.num_workers,
-                               njobs=args.njobs,
-                               verbose=True)
+    best, worst, trials = run_hyperopt(space, fresh_start, dataset, testset,
+                                       max_evals=args.max_evals,
+                                       num_workers=args.num_workers,
+                                       njobs=args.njobs,
+                                       verbose=True)
     joblib.dump(best, 'best_model.joblib')
+    joblib.dump(trials, 'trials.joblib')
 
 
 if __name__ == "__main__":

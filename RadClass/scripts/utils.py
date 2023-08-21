@@ -159,7 +159,7 @@ def run_hyperopt(space, model, data, testset, metric='loss', mode='min',
         print('\tparams:', worst['params'])
         # print('\tmodel:', worst['model'])
 
-    return best, worst  # , best_checkpoint, worst_checkpoint
+    return best, worst, trials  # , best_checkpoint, worst_checkpoint
 
 
 def cross_validation(model, X, y, params, n_splits=3,
