@@ -145,6 +145,8 @@ def parse_arguments():
                         help='weight for semi-supervised contrastive loss')
     parser.add_argument('--augs', '-u', type=str, nargs='+', default=None,
                         help='list of augmentations to be applied in SSL')
+    parser.add_argument('--trials', type=str, default=None,
+                        help='filename for pre-existing Trials object')
 
     args = parser.parse_args()
     return args
@@ -415,7 +417,8 @@ def main():
     #     space['start_from_checkpoint']: put(checkpoint)
 
     trials = run_hyperopt(space, fresh_start, dataset, testset,
-                          max_evals=args.max_evals, verbose=True)
+                          max_evals=args.max_evals, verbose=True,
+                          trials=args.trials)
     # joblib.dump(best, 'best_model.joblib')
     joblib.dump(trials, args.filename+'_trials.joblib')
 

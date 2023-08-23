@@ -2,8 +2,10 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import time
+import joblib
+import glob
 # For hyperparameter optimization
-from hyperopt import Trials, tpe, fmin
+from hyperopt import Trials, tpe, fmin, trials_from_docs
 from functools import partial
 # diagnostics
 from sklearn.metrics import confusion_matrix
@@ -56,7 +58,7 @@ class EarlyStopper:
 
 
 def run_hyperopt(space, model, data, testset, metric='loss', mode='min',
-                 max_evals=50, verbose=True):
+                 max_evals=50, verbose=True, trials=None):
     '''
     Runs hyperparameter optimization on a model given a parameter space.
     Inputs:
@@ -79,7 +81,10 @@ def run_hyperopt(space, model, data, testset, metric='loss', mode='min',
     # algo = HyperOptSearch(metric=metric, mode=mode)
     # algo = ConcurrencyLimiter(algo, max_concurrent=njobs)
 
-    trials = Trials()
+    if trials is None:
+        trials = Trials()
+    else:
+        trials = joblib.load(trials)
 
     # wrap data into objective function
     fmin_objective = partial(model, data=data, testset=testset)
@@ -141,6 +146,25 @@ def run_hyperopt(space, model, data, testset, metric='loss', mode='min',
         # print('\tmodel:', worst['model'])
 
     return best, worst, trials  # , best_checkpoint, worst_checkpoint
+
+
+def combine_trials(filenames, save=True):
+    '''
+    Combine a group of hyperopt.Trials() files into
+    one file object.
+    filenames: str; path and filename to stored Trials object.
+        Use bash * casing for multiple objects.
+        e.g. "/home/user/*_trials.joblib"
+    '''
+
+    files = glob.glob(filenames)
+    trials = []
+    for file in files:
+        trials = trials + list(joblib.load(file))
+    trials_merged = trials_from_docs(trials)
+    if save:
+        joblib.dump(trials_merged, './trials_merged.joblib')
+    return trials_merged
 
 
 def cross_validation(model, X, y, params, n_splits=3,
