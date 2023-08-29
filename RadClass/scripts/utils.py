@@ -160,7 +160,7 @@ def combine_trials(filenames, save=True):
     files = glob.glob(filenames)
     trials = []
     for file in files:
-        trials = trials + list(joblib.load(file))
+        trials = trials + list(joblib.load(file)[2])
     trials_merged = trials_from_docs(trials)
     if save:
         joblib.dump(trials_merged, './trials_merged.joblib')
