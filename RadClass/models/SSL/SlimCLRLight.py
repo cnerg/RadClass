@@ -129,6 +129,12 @@ def parse_arguments():
                         help='number of classes/labels in projection head')
     parser.add_argument('--alpha', '-a', type=float, default=1.,
                         help='weight for semi-supervised contrastive loss')
+    parser.add_argument('--beta1', type=float, default=0.8,
+                        help='first beta used by AdamW optimizer')
+    parser.add_argument('--beta2', type=float, default=0.99,
+                        help='second beta used by AdamW optimizer')
+    parser.add_argument('--weight-decay', type=float, default=1e-6,
+                        help='weight decay hyperparameter for AdamW optimizer')
     parser.add_argument('--augs', '-u', type=str, nargs='+', default=None,
                         help='list of augmentations to be applied in SSL')
 
@@ -270,7 +276,7 @@ def main():
                                 sub_batch_size, args.lr, args.momentum,
                                 args.cosine_anneal, args.num_epochs,
                                 args.alpha, num_classes, args.test_freq,
-                                testloader, args.convolution)
+                                testloader, args.convolution, (args.beta1, args.beta2), args.weight_decay)
     tb_logger = pl.loggers.TensorBoardLogger(save_dir=ckpt_path)
     trainer = pl.Trainer(max_epochs=args.num_epochs,
                          default_root_dir=ckpt_path,
