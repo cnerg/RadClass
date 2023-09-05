@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 from scipy.stats import loguniform
-from beads.beads import beads
+from beads.beads.beads import beads
 
 
 # DANS: Data Augmentations for Nuclear Spectra feature-Extraction

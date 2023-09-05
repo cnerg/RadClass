@@ -85,6 +85,7 @@ def run_hyperopt(space, model, data, testset, metric='loss', mode='min',
         trials = Trials()
     else:
         trials = joblib.load(trials)
+        max_evals = len(trials)+1
 
     # wrap data into objective function
     fmin_objective = partial(model, data=data, testset=testset)
