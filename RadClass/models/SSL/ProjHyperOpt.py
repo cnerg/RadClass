@@ -147,7 +147,7 @@ def parse_arguments():
                         help='list of augmentations to be applied in SSL')
     parser.add_argument('--trials', type=str, default=None,
                         help='filename for pre-existing Trials object')
-    parser.add_argument('--net', '-p', type=str, default=None,
+    parser.add_argument('--net', type=str, default=None,
                         help='filepath for pretrained representation model')
 
     args = parser.parse_args()
