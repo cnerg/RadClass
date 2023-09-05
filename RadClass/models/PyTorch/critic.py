@@ -27,10 +27,10 @@ class LinearCritic(nn.Module):
     More information found here: https://github.com/ae-foster/pytorch-simclr
     '''
 
-    def __init__(self, latent_dim, temperature=1.):
+    def __init__(self, latent_dim, projection_dim=128, temperature=1.):
         super(LinearCritic, self).__init__()
         self.temperature = temperature
-        self.projection_dim = 128
+        self.projection_dim = projection_dim
         self.w1 = nn.Linear(latent_dim, latent_dim, bias=False)
         self.bn1 = nn.BatchNorm1d(latent_dim)
         # self.bn1 = nn.BatchNorm1d(1)

@@ -171,6 +171,7 @@ class LitSimCLR(pl.LightningModule):
         optimizer_kwargs = dict(lr=self.lr, betas=self.betas,
                                 weight_decay=self.weight_decay)
         base_optimizer = torch.optim.AdamW(list(self.net.parameters())
+                                           + list(self.proj.parameters())
                                            + list(self.critic.parameters()),
                                            **optimizer_kwargs)
 
