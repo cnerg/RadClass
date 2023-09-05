@@ -406,8 +406,7 @@ def main():
     # convolution = hp.choice('convolution', [0, 1])
     space = {
         'lr': hp.uniform('lr', 1e-5, 0.5),
-        'n_layers': scope.int(hp.uniformint('n_layers', 1, 7)),
-        'convolution': hp.choice('convolution', [0, 1]),
+        'n_layers': scope.int(hp.uniformint('n_layers', 1, 4)),
         'projection_dim': scope.int(hp.uniformint('projection_dim', 8, 1024)),
         # 'mid': hp.choice('mid', architecture({'n_layers': n_layers,
         #                                       'convolution': convolution})),
@@ -428,6 +427,7 @@ def main():
         'in_dim': 1000,
         'mid': args.mid,
         'net_layers': args.n_layers,
+        'convolution': args.convolution,
         'net': args.net
     }
 
