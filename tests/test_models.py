@@ -14,6 +14,7 @@ from hyperopt import hp
 import scripts.utils as utils
 # models
 from models.LogReg import LogReg
+from models.SSML.CoTraining import CoTraining
 # testing write
 import joblib
 import os
@@ -65,16 +66,6 @@ def test_cross_validation():
     # therefore its accuracy should be less than all other folds
     assert (accs[-1] < accs[:-1]).all()
 
-    # test cross validation for supervised data and StratifiedKFold with LogReg
-    # params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
-    # model = LogReg(params=params)
-    # max_acc_model = utils.cross_validation(model=model,
-    #                                        X=X,
-    #                                        y=y,
-    #                                        params=params,
-    #                                        stratified=True)
-    # assert max_acc_model['accuracy'] >= 0.5
-
     # test cross validation for SSML with LabelProp
     # params = {'gamma': 10, 'n_neighbors': 15, 'max_iter': 2022, 'tol': 0.5}
     # model = LabelProp(params=params)
@@ -104,9 +95,10 @@ def test_pca():
     utils.plot_pca(pcs, y_train, np.full_like(Uy, -1), filename, 2)
     os.remove(filename+'.png')
 
-    # filename = 'test_multiD_pca'
-    # utils.multiD_pca(X_train, y_train, Ux, np.full_like(Uy, -1), filename, n=5)
-    # os.remove(filename+'.png')
+    filename = 'test_multiD_pca'
+    pcs = utils.pca(X_train, Ux, 5)
+    utils.plot_pca(pcs, y_train, np.full_like(Uy, -1), filename, 5)
+    os.remove(filename+'.png')
 
     # normalization
     normalizer = StandardScaler()
@@ -129,14 +121,16 @@ def test_pca():
 
 def test_LogReg():
     # test saving model input parameters
-    params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0}
+    params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0, 'random_state': 0}
     model = LogReg(max_iter=params['max_iter'],
                    tol=params['tol'],
-                   C=params['C'])
+                   C=params['C'],
+                   random_state=params['random_state'])
 
     assert model.model.max_iter == params['max_iter']
     assert model.model.tol == params['tol']
     assert model.model.C == params['C']
+    assert model.random_state == params['random_state']
 
     X_train, X_test, y_train, y_test = train_test_split(pytest.spectra,
                                                         pytest.labels,
@@ -181,6 +175,97 @@ def test_LogReg():
     # from hyperopt, so long as something is not wrong with the class
     assert model.best['accuracy'] >= model.worst['accuracy']
     assert model.best['status'] == 'ok'
+
+    # testing model write to file method
+    filename = 'test_LogReg'
+    ext = '.joblib'
+    model.save(filename)
+    model_file = joblib.load(filename+ext)
+    assert model_file.best['params'] == model.best['params']
+
+    os.remove(filename+ext)
+
+
+def test_CoTraining():
+    # test saving model input parameters
+    params = {'max_iter': 2022, 'tol': 0.5, 'C': 5.0,
+              'random_state': 0, 'seed': 1}
+    model = CoTraining(max_iter=params['max_iter'],
+                       tol=params['tol'],
+                       C=params['C'],
+                       random_state=params['random_state'],
+                       seed=params['seed'])
+
+    assert model.model1.max_iter == params['max_iter']
+    assert model.model1.tol == params['tol']
+    assert model.model1.C == params['C']
+
+    assert model.model2.max_iter == params['max_iter']
+    assert model.model2.tol == params['tol']
+    assert model.model2.C == params['C']
+
+    assert model.random_state == params['random_state']
+    assert model.seed == params['seed']
+
+    X, Ux, y, Uy = train_test_split(pytest.spectra,
+                                    pytest.labels,
+                                    test_size=0.5,
+                                    random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(X,
+                                                        y,
+                                                        test_size=0.2,
+                                                        random_state=0)
+
+    # normalization
+    normalizer = StandardScaler()
+    normalizer.fit(X_train)
+
+    X_train = normalizer.transform(X_train)
+    X_test = normalizer.transform(X_test)
+    Ux = normalizer.transform(Ux)
+
+    # default behavior
+    model = CoTraining(params=None, random_state=0)
+    model.train(X_train, y_train, Ux)
+
+    # testing train and predict methods
+    pred, acc, *_ = model.predict(X_test, y_test)
+
+    # since the test data used here is synthetic/toy data (i.e. uninteresting),
+    # the trained model should be at least better than a 50-50 guess
+    # if it was worse, something would be wrong with the ML class
+    assert acc > 0.5
+
+    # testing hyperopt optimize methods
+    space = {'max_iter': scope.int(hp.quniform('max_iter',
+                                               10,
+                                               10000,
+                                               10)),
+             'tol': hp.loguniform('tol', 1e-5, 1e-3),
+             'C': hp.uniform('C', 1.0, 1000.0),
+             'n_samples': scope.int(hp.quniform('n_samples',
+                                                1,
+                                                20,
+                                                1)),
+             'seed': 0
+             }
+    data_dict = {'trainx': X_train,
+                 'testx': X_test,
+                 'trainy': y_train,
+                 'testy': y_test,
+                 'Ux': Ux
+                 }
+    model.optimize(space, data_dict, max_evals=2, verbose=True)
+
+    assert model.best['accuracy'] >= model.worst['accuracy']
+    assert model.best['status'] == 'ok'
+
+    # testing model plotting method
+    filename = 'test_plot'
+    model.plot_cotraining(model1_accs=model.best['model1_acc_history'],
+                          model2_accs=model.best['model2_acc_history'],
+                          filename=filename)
+    os.remove(filename+'.png')
 
     # testing model write to file method
     filename = 'test_LogReg'

@@ -17,14 +17,14 @@ class LogReg:
         Add multinomial functions and unit tests.
         Add functionality for regression(?)
     Inputs:
-    params: dictionary of logistic regression input functions.
-        keys max_iter, tol, and C supported.
+    kwargs: logistic regression input functions.
+        keys random_state, max_iter, tol, and C supported.
     random_state: int/float for reproducible intiailization.
     '''
 
     # only binary so far
     def __init__(self, **kwargs):
-        # supported keys = ['max_iter', 'tol', 'C']
+        # supported keys = ['max_iter', 'tol', 'C', 'random_state']
         # defaults to a fixed value for reproducibility
         self.random_state = kwargs.pop('random_state', 0)
         # parameters for logistic regression model:
