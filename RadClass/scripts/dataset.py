@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import logging
 from torch.utils.data import Dataset
-from .augs import DANSE
+from RadClass.scripts.augs import DANSE
 
 # import sys
 # import os
