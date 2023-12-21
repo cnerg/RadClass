@@ -5,14 +5,7 @@ import subprocess
 import torch
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
-# from torchlars import LARS
 from tqdm import tqdm
-
-# import sys
-# import os
-# sys.path.append(os.getcwd()+'/scripts/')
-# sys.path.append(os.getcwd()+'/models/PyTorch/')
-# sys.path.append(os.getcwd()+'/models/SSL/')
 
 from ...scripts.configs import get_datasets
 from ..PyTorch.critic import LinearCritic

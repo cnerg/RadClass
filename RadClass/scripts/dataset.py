@@ -4,10 +4,6 @@ import logging
 from torch.utils.data import Dataset
 from RadClass.scripts.augs import DANSE
 
-# import sys
-# import os
-# sys.path.append(os.getcwd()+'/scripts/')
-
 
 def remove_bckg(X):
     auger = DANSE()
@@ -49,9 +45,6 @@ class DataOrganizer(Dataset):
 class MINOSBiaugment(Dataset):
     def __init__(self, X, y, transforms,
                  normalization=False, accounting=False):
-        # self.data = pd.read_hdf(data_fpath, key='data')
-        # self.targets = torch.from_numpy(self.data['event'].values)
-        # self.data = torch.from_numpy(self.data[np.arange(1000)].values)
         self.data = torch.FloatTensor(X.copy())
         self.targets = torch.LongTensor(y.copy())
         self.transforms = transforms
@@ -106,9 +99,6 @@ class MINOSBiaugment(Dataset):
 
 class DataBiaugment(Dataset):
     def __init__(self, X, y, transforms, mean, std, accounting=False):
-        # self.data = pd.read_hdf(data_fpath, key='data')
-        # self.targets = torch.from_numpy(self.data['event'].values)
-        # self.data = torch.from_numpy(self.data[np.arange(1000)].values)
         self.data = torch.FloatTensor(X.copy())
         self.targets = torch.LongTensor(y.copy())
         self.transforms = transforms

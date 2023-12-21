@@ -3,41 +3,10 @@ Author: Jordan Stomps
 
 Largely adapted from a PyTorch conversion of SimCLR by Adam Foster.
 More information found here: https://github.com/ae-foster/pytorch-simclr
-
-MIT License
-
-Copyright (c) 2023 Jordan Stomps
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 '''
 
-# import torchvision
-# import torchvision.transforms as transforms
-
-# import sys
-# import os
-# sys.path.append(os.getcwd()+'/scripts/')
-# sys.path.append(os.getcwd()+'/data/')
-# from augmentation import ColourDistortion
 from .dataset import MINOSBiaugment, DataOrganizer, DataBiaugment
 from .specTools import read_h_file
-# from models import *
 from .transforms import Background, Resample, Sig2Bckg, Nuclear, \
     Resolution, Mask, GainShift
 from sklearn.model_selection import train_test_split
@@ -57,7 +26,6 @@ def add_indices(dataset_cls):
 def get_datasets(dataset, dset_fpath, bckg_fpath, valsfpath=None,
                  testfpath=None, normalization=False, accounting=False,
                  augs=None, add_indices_to_data=False):
-    # , augment_clf_train=False, num_positive=None):
 
     ssml_dset = None
     transform_dict = {
@@ -88,22 +56,20 @@ def get_datasets(dataset, dset_fpath, bckg_fpath, valsfpath=None,
         print(f'\t{t}')
 
     if dataset in ['minos', 'minos-ssml']:
+        # Using anomalous data for training, labeled data from noisy heuristic
+        # for validation, and labeled data for testing
         data = pd.read_hdf(dset_fpath, key='data')
-        # print(f'\tclasses: {np.unique(targets, return_counts=True)}')
-        # print(f'\t\tshape: {targets.shape}')
         ytr = np.full(data.shape[0], -1)
         Xtr = data.to_numpy()[:, np.arange(1000)].astype(float)
         print(f'\tNOTE: double check data indexing: {data.shape}')
         val = pd.read_hdf(valsfpath, key='data')
         Xval = val.to_numpy()[:, 1+np.arange(1000)].astype(float)
         yval = val['label'].values
-        # yval[yval == 1] = 0
         yval[yval != 1] = 0
         test = read_h_file(testfpath, 60, 60)
         Xtest = test.to_numpy()[:, np.arange(1000)].astype(float)
         targets = test['event'].values
         # all test values are positives
-        # ytest = np.full_like(ytest, 0, dtype=np.int32)
         ytest = np.ones_like(targets, dtype=np.int32)
         # metal transfers
         ytest[targets == 'ac225'] = 0
@@ -143,9 +109,9 @@ def get_datasets(dataset, dset_fpath, bckg_fpath, valsfpath=None,
             test_dset = DataOrganizer(Xtest, ytest, tr_dset.mean,
                                       tr_dset.std, accounting=accounting)
     elif dataset in ['minos-curated', 'minos-transfer-ssml']:
+        # Using weakly anomalous data for contrastive training and labeled data
+        # for training and testing classifier
         data = pd.read_hdf(dset_fpath, key='data')
-        # print(f'\tclasses: {np.unique(targets, return_counts=True)}')
-        # print(f'\t\tshape: {targets.shape}')
         ytr = np.full(data.shape[0], -1)
         Xtr = data.to_numpy()[:, np.arange(1000)].astype(float)
         print(f'\tNOTE: double check data indexing: {data.shape}')
@@ -158,7 +124,6 @@ def get_datasets(dataset, dset_fpath, bckg_fpath, valsfpath=None,
                                                          train_size=0.2,
                                                          stratify=y)
         # all test values are positives
-        # ytest = np.full_like(ytest, 0, dtype=np.int32)
         yval = np.ones_like(val_targets, dtype=np.int32)
         ytest = np.ones_like(test_targets, dtype=np.int32)
         # metal transfers
@@ -205,14 +170,11 @@ def get_datasets(dataset, dset_fpath, bckg_fpath, valsfpath=None,
     elif dataset == 'minos-2019':
         # Including unlabeled spectral data for contrastive learning
         data = pd.read_hdf(dset_fpath, key='data')
-        # print(f'\tclasses: {np.unique(targets, return_counts=True)}')
-        # print(f'\t\tshape: {targets.shape}')
         ytr = np.full(data.shape[0], -1)
         Xtr = data.to_numpy()[:, np.arange(1000)].astype(float)
         print(f'\tNOTE: double check data indexing: {data.shape}')
 
         X = pd.read_hdf(valsfpath, key='data')
-        # events = np.unique(X['label'].values)
         y = X['label'].values
         y[y == 1] = 0
         y[y != 0] = 1

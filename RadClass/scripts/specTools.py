@@ -1,7 +1,15 @@
+'''
+Author: Ken Dayman
+
+Ken shared these scripts with me for processing spectral data.
+I left these here because configs.py uses them, but they are probably
+uninteresting to someone who does not use the same data. -Jordan Stomps
+'''
+
 import numpy as np
 import pandas as pd
 import h5py as h
-from typing import List, Optional, Type
+from typing import List
 
 
 def integrate_spectral_matrix(
@@ -46,74 +54,6 @@ def separate_event_counter(df):
 		return r
 
 	df = df.apply(_helper, axis=1)
-	return df
-
-
-def resample_spectra(
-        df: pd.DataFrame,
-        n: int,
-        n_channels=1000
-) -> pd.DataFrame:
-    """
-    :param df: dataframe containing m spectra as rows and labels
-    :param n: number of resamples for each spectrum
-    :return: list of m * (n + 1) spectra
-    """
-    def _resample(spec):
-        """performs single resample"""
-        return np.array([np.random.poisson(lam=channel) for channel in spec])
-
-    # combine labels to make repeating easier
-    unsplit_columns = df.columns
-    print("Before combine_label():\n")
-    print(df.columns)
-    df = combine_label(df)
-    print("\n\nAfter combine_label()\n")
-    print(df.columns)
-
-    spectra = np.array(df.iloc[:, :n_channels])
-    # note we assume our label is in one columns
-    labels = np.array(df.iloc[:, n_channels])
-
-    # note np.repeat() repeats each element rather than repeating the whole array
-    new_spectra = [_resample(spectrum) for spectrum in spectra for _ in range(n) ]
-    new_labels = np.concatenate([labels.reshape(-1, 1), np.repeat(labels, n).reshape(-1, 1)], axis=0)
-    combined_data = np.concatenate(
-        [np.concatenate([spectra, new_spectra], axis=0), new_labels], axis=1
-    )
-
-    # undo label combine to allow separate tracking of event, event counter, and detector/station
-    # I might be able to skip the next line
-    df_ = pd.DataFrame(data=combined_data, columns=df.columns)
-    df_ = split_labels(df_)
-    #print("After split_labels()\n")
-    #print(df.columns)
-    #print("Size of combined data...")
-
-    return df_
-
-
-def combine_label(df):
-    """combines event and detector to make resampling easier"""
-    def _combine_helper(r):
-        return '_'.join([r['event'], r['detector'], r['instance']])
-
-    df['label'] = df.apply(_combine_helper, axis=1)
-    df = df.drop(['event', 'detector', 'instance'], axis=1)
-    return df
-
-
-def split_labels(df):
-	"""opposite of combine labels to do after resampling"""
-	def _split_helper(r):
-		r['event'] = r['label'].split('_')[0]
-		r['detector'] = r['label'].split('_')[1]
-		r['instance'] = r['label'].split('_')[2]
-		return r
-
-	df = df.apply(_split_helper, axis=1)
-	df = df.drop('label', axis=1)
-	
 	return df
 
 

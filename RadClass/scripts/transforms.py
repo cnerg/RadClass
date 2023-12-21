@@ -4,10 +4,6 @@ import pandas as pd
 from scipy.stats import loguniform
 import torch
 
-# import sys
-# import os
-# sys.path.append(os.getcwd()+'/scripts/')
-
 
 class Background(torch.nn.Module):
     def __init__(self, bckg_dir, mode='beads'):

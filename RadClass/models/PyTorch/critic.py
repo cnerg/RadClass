@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class MSELoss(nn.Module):
-    """ use just MSE loss with UncertainLinear network """
+    """ use just MSE loss with nerual network """
     def forward(self, out: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         # yhat, _ = out
         # print('out: {}'.format(out))
@@ -14,7 +14,7 @@ class MSELoss(nn.Module):
 
 
 class L1Loss(nn.Module):
-    """ use just L1 loss with UncertainLinear network """
+    """ use just L1 loss with neural network """
     def forward(self, out: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         # yhat, _ = out
         loss = F.smooth_l1_loss(out.reshape(-1, 1), y.reshape(-1, 1))
@@ -24,6 +24,8 @@ class L1Loss(nn.Module):
 class LinearCritic(nn.Module):
     '''
     Largely adapted from a PyTorch conversion of SimCLR by Adam Foster.
+    Used only for implementing a projection head.
+    That is, the project method is used but the old implementation 
     More information found here: https://github.com/ae-foster/pytorch-simclr
     '''
 
@@ -43,6 +45,8 @@ class LinearCritic(nn.Module):
         return self.bn2(self.w2(self.relu(self.bn1(self.w1(h)))))
 
     def forward(self, h1, h2):
+        # NOTE: old implementation of NTXent Loss written by Adam Foster.
+        # Not used in this work, pytorch-metric-learning is used instead.
         z1, z2 = self.project(h1), self.project(h2)
         sim11 = self.cossim(z1.unsqueeze(-2),
                             z1.unsqueeze(-3)) / self.temperature
