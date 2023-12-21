@@ -14,7 +14,6 @@ from hyperopt import hp
 import scripts.utils as utils
 # models
 from models.LogReg import LogReg
-# models
 from models.SSML.CoTraining import CoTraining
 # testing write
 import joblib
